@@ -4,13 +4,13 @@
 
 ---
 
-## 🎯 Objective
+## Objective
 
 `go-metadata` is a pure Go library for extracting metadata from a wide range of file types including images, audio, video, documents, and archives. It replicates the core functionality of ExifTool, but is written entirely in Go — no external binaries, no CGO, and suitable for embedding into Go applications, CLI tools, or services.
 
 ---
 
-## ⚙️ How It Works
+## How It Works
 
 ### 1. Parsing ExifTool `.pm` Tag Definitions
 
@@ -44,7 +44,7 @@
 
 ---
 
-## 🔁 Updating to New ExifTool Releases
+## Updating to New ExifTool Releases
 
 If ExifTool publishes an updated set of `.pm` tag files:
 
@@ -56,7 +56,7 @@ This makes `go-metadata` resilient and extensible to future format and tag chang
 
 ---
 
-## 🧱 Project Structure Overview
+## Project Structure Overview
 
 ```
 go-metadata
@@ -76,7 +76,7 @@ go-metadata
 
 ---
 
-## ✅ Key Features
+## Key Features
 
 - Pure Go (no dependencies on ExifTool binaries or CGO)
 - Supports EXIF, ID3, PDF, PNG, MP4, Office formats, and more
@@ -85,7 +85,7 @@ go-metadata
 
 ---
 
-## 🧪 Get Started
+## Get Started
 
 ```bash
 go install github.com/greg-hacke/go-metadata/cmd/gen-tags@latest
@@ -100,6 +100,6 @@ meta-test ./testdata/example.jpg
 
 ---
 
-## 📄 License
+## License
 
 This project is licensed under the GNU GPL v2.0 License.
