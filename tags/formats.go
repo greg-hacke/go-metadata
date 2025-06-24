@@ -4,28 +4,28 @@ package tags
 
 // FileExtensions maps file extensions to module names
 var FileExtensions = map[string]string{
+	".png": "PNG",
+	".m4a": "QuickTime",
 	".gif": "GIF",
 	".jpg": "JPEG",
 	".jpe": "JPEG",
 	".pdf": "PDF",
-	".png": "PNG",
-	".m4a": "QuickTime",
+	".mp4": "QuickTime",
+	".m4v": "QuickTime",
 	".mov": "QuickTime",
 	".bmp": "BMP",
 	".mp3": "ID3",
 	".jpeg": "JPEG",
-	".mp4": "QuickTime",
-	".m4v": "QuickTime",
 }
 
 // MIMETypes maps MIME types to module names
 var MIMETypes = map[string]string{
-	"image/png": "PNG",
-	"video/mp4": "QuickTime",
 	"video/quicktime": "QuickTime",
 	"image/bmp": "BMP",
 	"image/gif": "GIF",
 	"audio/mpeg": "ID3",
 	"image/jpeg": "JPEG",
 	"application/pdf": "PDF",
+	"image/png": "PNG",
+	"video/mp4": "QuickTime",
 }

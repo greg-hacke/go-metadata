@@ -6,32 +6,32 @@ package tags
 var ExifintFormatTags = TagTable{
 	ModuleName: "Exif",
 	Tags: map[string]TagDef{
-		"int32u": {
-			ID:          "int32u",
-		},
-		"int8s": {
-			ID:          "int8s",
-		},
-		"ifd": {
-			ID:          "ifd",
-		},
-		"ifd64": {
-			ID:          "ifd64",
-		},
 		"int8u": {
 			ID:          "int8u",
 		},
 		"int16u": {
 			ID:          "int16u",
 		},
-		"int16s": {
-			ID:          "int16s",
+		"int32u": {
+			ID:          "int32u",
+		},
+		"int8s": {
+			ID:          "int8s",
 		},
 		"int32s": {
 			ID:          "int32s",
 		},
 		"int64u": {
 			ID:          "int64u",
+		},
+		"ifd64": {
+			ID:          "ifd64",
+		},
+		"int16s": {
+			ID:          "int16s",
+		},
+		"ifd": {
+			ID:          "ifd",
 		},
 		"int64s": {
 			ID:          "int64s",

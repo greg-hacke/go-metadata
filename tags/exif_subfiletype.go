@@ -6,10 +6,6 @@ package tags
 var ExifsubfileTypeTags = TagTable{
 	ModuleName: "Exif",
 	Tags: map[string]TagDef{
-		"0": {
-			ID:          "0",
-			Name:        "Full-resolution image",
-		},
 		"2": {
 			ID:          "2",
 			Name:        "Single page of multi-page image",
@@ -22,39 +18,43 @@ var ExifsubfileTypeTags = TagTable{
 			ID:          "4",
 			Name:        "Transparency mask",
 		},
-		"5": {
-			ID:          "5",
-			Name:        "Transparency mask of reduced-resolution image",
-		},
-		"7": {
-			ID:          "7",
-			Name:        "Transparency mask of reduced-resolution multi-page image",
+		"8": {
+			ID:          "8",
 		},
 		"9": {
 			ID:          "9",
 		},
-		"0x10004": {
-			ID:          "0x10004",
+		"0x10001": {
+			ID:          "0x10001",
 		},
-		"1": {
-			ID:          "1",
-			Name:        "Reduced-resolution image",
+		"5": {
+			ID:          "5",
+			Name:        "Transparency mask of reduced-resolution image",
 		},
 		"6": {
 			ID:          "6",
 			Name:        "Transparency mask of multi-page image",
 		},
-		"8": {
-			ID:          "8",
+		"7": {
+			ID:          "7",
+			Name:        "Transparency mask of reduced-resolution multi-page image",
 		},
 		"16": {
 			ID:          "16",
 		},
-		"0x10001": {
-			ID:          "0x10001",
+		"0x10004": {
+			ID:          "0x10004",
 		},
 		"0xFFFFFFFF": {
 			ID:          "0xFFFFFFFF",
+		},
+		"0": {
+			ID:          "0",
+			Name:        "Full-resolution image",
+		},
+		"1": {
+			ID:          "1",
+			Name:        "Reduced-resolution image",
 		},
 	},
 }

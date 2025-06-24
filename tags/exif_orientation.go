@@ -6,18 +6,6 @@ package tags
 var ExiforientationTags = TagTable{
 	ModuleName: "Exif",
 	Tags: map[string]TagDef{
-		"7": {
-			ID:          "7",
-			Name:        "Mirror horizontal and rotate 90 CW",
-		},
-		"8": {
-			ID:          "8",
-			Name:        "Rotate 270 CW",
-		},
-		"1": {
-			ID:          "1",
-			Name:        "Horizontal (normal)",
-		},
 		"2": {
 			ID:          "2",
 			Name:        "Mirror horizontal",
@@ -37,6 +25,18 @@ var ExiforientationTags = TagTable{
 		"6": {
 			ID:          "6",
 			Name:        "Rotate 90 CW",
+		},
+		"7": {
+			ID:          "7",
+			Name:        "Mirror horizontal and rotate 90 CW",
+		},
+		"8": {
+			ID:          "8",
+			Name:        "Rotate 270 CW",
+		},
+		"1": {
+			ID:          "1",
+			Name:        "Horizontal (normal)",
 		},
 	},
 }

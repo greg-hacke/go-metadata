@@ -6,29 +6,20 @@ package tags
 var ExifformatNumberTags = TagTable{
 	ModuleName: "Exif",
 	Tags: map[string]TagDef{
-		"rational64u": {
-			ID:          "rational64u",
-		},
-		"undef": {
-			ID:          "undef",
+		"int8u": {
+			ID:          "int8u",
 		},
 		"binary": {
 			ID:          "binary",
 		},
-		"string": {
-			ID:          "string",
-		},
-		"int32s": {
-			ID:          "int32s",
-		},
-		"float": {
-			ID:          "float",
-		},
-		"double": {
-			ID:          "double",
+		"unicode": {
+			ID:          "unicode",
 		},
 		"complex": {
 			ID:          "complex",
+		},
+		"int64u": {
+			ID:          "int64u",
 		},
 		"int64s": {
 			ID:          "int64s",
@@ -36,11 +27,20 @@ var ExifformatNumberTags = TagTable{
 		"ifd64": {
 			ID:          "ifd64",
 		},
+		"utf8": {
+			ID:          "utf8",
+		},
 		"int16u": {
 			ID:          "int16u",
 		},
-		"int32u": {
-			ID:          "int32u",
+		"rational64u": {
+			ID:          "rational64u",
+		},
+		"rational64s": {
+			ID:          "rational64s",
+		},
+		"double": {
+			ID:          "double",
 		},
 		"int8s": {
 			ID:          "int8s",
@@ -48,23 +48,23 @@ var ExifformatNumberTags = TagTable{
 		"int16s": {
 			ID:          "int16s",
 		},
-		"rational64s": {
-			ID:          "rational64s",
+		"int32s": {
+			ID:          "int32s",
+		},
+		"float": {
+			ID:          "float",
+		},
+		"string": {
+			ID:          "string",
+		},
+		"int32u": {
+			ID:          "int32u",
+		},
+		"undef": {
+			ID:          "undef",
 		},
 		"ifd": {
 			ID:          "ifd",
-		},
-		"utf8": {
-			ID:          "utf8",
-		},
-		"int8u": {
-			ID:          "int8u",
-		},
-		"unicode": {
-			ID:          "unicode",
-		},
-		"int64u": {
-			ID:          "int64u",
 		},
 	},
 }

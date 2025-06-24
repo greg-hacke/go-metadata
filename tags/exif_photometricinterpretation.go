@@ -6,12 +6,26 @@ package tags
 var ExifphotometricInterpretationTags = TagTable{
 	ModuleName: "Exif",
 	Tags: map[string]TagDef{
-		"32845": {
-			ID:          "32845",
-		},
 		"0": {
 			ID:          "0",
 			Name:        "WhiteIsZero",
+		},
+		"6": {
+			ID:          "6",
+			Name:        "YCbCr",
+		},
+		"32844": {
+			ID:          "32844",
+		},
+		"8": {
+			ID:          "8",
+			Name:        "CIELab",
+		},
+		"32803": {
+			ID:          "32803",
+		},
+		"51177": {
+			ID:          "51177",
 		},
 		"1": {
 			ID:          "1",
@@ -21,49 +35,35 @@ var ExifphotometricInterpretationTags = TagTable{
 			ID:          "2",
 			Name:        "RGB",
 		},
-		"3": {
-			ID:          "3",
-			Name:        "RGB Palette",
-		},
 		"5": {
 			ID:          "5",
 			Name:        "CMYK",
 		},
-		"8": {
-			ID:          "8",
-			Name:        "CIELab",
-		},
 		"9": {
 			ID:          "9",
+		},
+		"10": {
+			ID:          "10",
+		},
+		"32892": {
+			ID:          "32892",
+		},
+		"34892": {
+			ID:          "34892",
+		},
+		"52527": {
+			ID:          "52527",
+		},
+		"3": {
+			ID:          "3",
+			Name:        "RGB Palette",
 		},
 		"4": {
 			ID:          "4",
 			Name:        "Transparency Mask",
 		},
-		"32803": {
-			ID:          "32803",
-		},
-		"32844": {
-			ID:          "32844",
-		},
-		"32892": {
-			ID:          "32892",
-		},
-		"6": {
-			ID:          "6",
-			Name:        "YCbCr",
-		},
-		"51177": {
-			ID:          "51177",
-		},
-		"52527": {
-			ID:          "52527",
-		},
-		"10": {
-			ID:          "10",
-		},
-		"34892": {
-			ID:          "34892",
+		"32845": {
+			ID:          "32845",
 		},
 	},
 }

@@ -6,39 +6,28 @@ package tags
 var ExiflightSourceTags = TagTable{
 	ModuleName: "Exif",
 	Tags: map[string]TagDef{
-		"17": {
-			ID:          "17",
-			Name:        "Standard Light A",
+		"21": {
+			ID:          "21",
+			Name:        "D65",
 		},
-		"19": {
-			ID:          "19",
-			Name:        "Standard Light C",
+		"23": {
+			ID:          "23",
+			Name:        "D50",
+		},
+		"3": {
+			ID:          "3",
+			Name:        "Tungsten (Incandescent)",
+		},
+		"9": {
+			ID:          "9",
+			Name:        "Fine Weather",
+		},
+		"16": {
+			ID:          "16",
 		},
 		"22": {
 			ID:          "22",
 			Name:        "D75",
-		},
-		"0": {
-			ID:          "0",
-			Name:        "Unknown",
-		},
-		"4": {
-			ID:          "4",
-			Name:        "Flash",
-		},
-		"11": {
-			ID:          "11",
-			Name:        "Shade",
-		},
-		"13": {
-			ID:          "13",
-		},
-		"14": {
-			ID:          "14",
-		},
-		"21": {
-			ID:          "21",
-			Name:        "D65",
 		},
 		"24": {
 			ID:          "24",
@@ -56,38 +45,49 @@ var ExiflightSourceTags = TagTable{
 			ID:          "2",
 			Name:        "Fluorescent",
 		},
-		"3": {
-			ID:          "3",
-			Name:        "Tungsten (Incandescent)",
-		},
-		"9": {
-			ID:          "9",
-			Name:        "Fine Weather",
+		"15": {
+			ID:          "15",
 		},
 		"10": {
 			ID:          "10",
 			Name:        "Cloudy",
 		},
-		"23": {
-			ID:          "23",
-			Name:        "D50",
+		"13": {
+			ID:          "13",
 		},
-		"12": {
-			ID:          "12",
+		"14": {
+			ID:          "14",
 		},
-		"18": {
-			ID:          "18",
-			Name:        "Standard Light B",
+		"19": {
+			ID:          "19",
+			Name:        "Standard Light C",
 		},
 		"20": {
 			ID:          "20",
 			Name:        "D55",
 		},
-		"15": {
-			ID:          "15",
+		"0": {
+			ID:          "0",
+			Name:        "Unknown",
 		},
-		"16": {
-			ID:          "16",
+		"4": {
+			ID:          "4",
+			Name:        "Flash",
+		},
+		"11": {
+			ID:          "11",
+			Name:        "Shade",
+		},
+		"12": {
+			ID:          "12",
+		},
+		"17": {
+			ID:          "17",
+			Name:        "Standard Light A",
+		},
+		"18": {
+			ID:          "18",
+			Name:        "Standard Light B",
 		},
 	},
 }

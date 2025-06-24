@@ -6,9 +6,6 @@ package tags
 var ExifsaveForValidateTags = TagTable{
 	ModuleName: "Exif",
 	Tags: map[string]TagDef{
-		"0x100": {
-			ID:          "0x100",
-		},
 		"0x101": {
 			ID:          "0x101",
 		},
@@ -20,6 +17,9 @@ var ExifsaveForValidateTags = TagTable{
 		},
 		"0x115": {
 			ID:          "0x115",
+		},
+		"0x100": {
+			ID:          "0x100",
 		},
 	},
 }
