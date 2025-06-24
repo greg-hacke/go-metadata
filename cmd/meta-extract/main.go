@@ -1,46 +1,109 @@
+// File: cmd/meta-extract/main.go
+
 package main
 
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"sort"
+	"strconv"
 	"strings"
 
 	"greg-hacke/go-metadata/tags"
 )
 
-// Field represents extracted metadata
-type Field struct {
-	TableName   string
-	TagID       string
-	Name        string
-	Value       interface{}
-	Description string
+// MetadataOutput represents the JSON output structure
+type MetadataOutput struct {
+	File     string          `json:"file"`
+	Format   string          `json:"format"`
+	Size     int64           `json:"size"`
+	Metadata []MetadataField `json:"metadata"`
+}
+
+// MetadataField represents a single metadata field in JSON
+type MetadataField struct {
+	Table       string      `json:"table"`
+	TagID       string      `json:"tag_id"`
+	Name        string      `json:"name"`
+	Value       interface{} `json:"value"`
+	Description string      `json:"description,omitempty"`
 }
 
 func main() {
 	// Parse command line flags
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [options] <file>\n\n", os.Args[0])
-		fmt.Fprintf(os.Stderr, "Extract and display metadata from files\n\n")
+		fmt.Fprintf(os.Stderr, "Extract and display metadata from files as JSON\n\n")
 		fmt.Fprintf(os.Stderr, "Options:\n")
 		flag.PrintDefaults()
 	}
 
-	verbose := flag.Bool("v", false, "Verbose output")
-	showTables := flag.Bool("tables", false, "Show available tag tables")
+	pretty := flag.Bool("pretty", false, "Pretty print JSON output")
+	verbose := flag.Bool("v", false, "Verbose output for debugging")
+	listTables := flag.Bool("list-tables", false, "List all available tag tables")
 	flag.Parse()
 
-	// If showing tables, list them and exit
-	if *showTables {
+	// If listing tables, show them and exit
+	if *listTables {
 		fmt.Println("Available tag tables:")
-		for tableName := range tags.AllTags {
-			fmt.Printf("  %s\n", tableName)
+		tableNames := make([]string, 0, len(tags.AllTags))
+		for name := range tags.AllTags {
+			tableNames = append(tableNames, name)
 		}
+		sort.Strings(tableNames)
+
+		for _, name := range tableNames {
+			table := tags.AllTags[name]
+			fmt.Printf("  %-40s (%d tags)\n", name, len(table.Tags))
+		}
+
+		// Show some common EXIF and IPTC tags
+		fmt.Println("\nSample EXIF tags in Exif::Main (if available):")
+		if exifMain, ok := tags.AllTags["Exif::Main"]; ok {
+			count := 0
+			// Show some common tags
+			commonTags := []string{"0x10E", "0x10F", "0x110", "0x112", "0x131", "0x132", "0x13B"}
+			for _, id := range commonTags {
+				if tag, found := exifMain.Tags[id]; found {
+					fmt.Printf("  %s: %s\n", id, tag.Name)
+					count++
+				}
+			}
+			if count == 0 {
+				// Show first 5 tags
+				for id, tag := range exifMain.Tags {
+					if count < 5 {
+						fmt.Printf("  %s: %s\n", id, tag.Name)
+						count++
+					}
+				}
+			}
+		}
+
+		fmt.Println("\nSample IPTC tags in IPTC::ApplicationRecord (if available):")
+		if iptcApp, ok := tags.AllTags["IPTC::ApplicationRecord"]; ok {
+			// Show all tags since there are only 3
+			for id, tag := range iptcApp.Tags {
+				fmt.Printf("  %s: %s\n", id, tag.Name)
+			}
+			// Also check for common IPTC tags
+			fmt.Println("\nChecking for common IPTC tags:")
+			commonIPTC := []string{"2:05", "2:25", "2:80", "2:116", "2:120", "2:5", "2:55", "2:90"}
+			for _, id := range commonIPTC {
+				if tag, found := iptcApp.Tags[id]; found {
+					fmt.Printf("  Found %s: %s\n", id, tag.Name)
+				} else {
+					fmt.Printf("  Missing %s\n", id)
+				}
+			}
+		}
+
 		return
 	}
 
@@ -55,85 +118,138 @@ func main() {
 	// Open file
 	file, err := os.Open(filePath)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error opening file: %v\n", err)
-		os.Exit(1)
+		outputError(err, "Error opening file")
 	}
 	defer file.Close()
 
 	// Get file info
 	stat, err := file.Stat()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error getting file info: %v\n", err)
-		os.Exit(1)
+		outputError(err, "Error getting file info")
 	}
 
-	// Read entire file into memory for dynamic parsing
+	// Read entire file into memory
 	data := make([]byte, stat.Size())
 	if _, err := io.ReadFull(file, data); err != nil {
-		fmt.Fprintf(os.Stderr, "Error reading file: %v\n", err)
-		os.Exit(1)
+		outputError(err, "Error reading file")
 	}
 
 	// Identify format from extension
 	ext := strings.ToLower(filepath.Ext(filePath))
 	formatName, ok := tags.FileExtensions[ext]
 	if !ok {
-		fmt.Fprintf(os.Stderr, "Unknown file extension: %s\n", ext)
-		os.Exit(1)
+		outputError(fmt.Errorf("unknown file extension: %s", ext), "Format error")
 	}
 
-	if *verbose {
-		fmt.Printf("File: %s\n", filePath)
-		fmt.Printf("Format: %s (from extension %s)\n", formatName, ext)
-		fmt.Printf("Size: %d bytes\n", len(data))
-		fmt.Println()
-	}
-
-	// Extract metadata dynamically using tag tables
+	// Extract metadata
 	fields := extractMetadataFromData(data, formatName, *verbose)
+	if fields == nil {
+		fields = []MetadataField{} // Ensure it's an empty array, not null
+	}
 
-	// Display results
-	displayFields(fields, *verbose)
+	// Create output structure
+	output := MetadataOutput{
+		File:     filePath,
+		Format:   formatName,
+		Size:     stat.Size(),
+		Metadata: fields,
+	}
+
+	// Output JSON
+	var jsonData []byte
+	if *pretty {
+		jsonData, err = json.MarshalIndent(output, "", "  ")
+	} else {
+		jsonData, err = json.Marshal(output)
+	}
+
+	if err != nil {
+		outputError(err, "Error encoding JSON")
+	}
+
+	fmt.Println(string(jsonData))
+}
+
+func outputError(err error, message string) {
+	errorOutput := struct {
+		Error   string `json:"error"`
+		Message string `json:"message"`
+	}{
+		Error:   message,
+		Message: err.Error(),
+	}
+
+	jsonData, _ := json.Marshal(errorOutput)
+	fmt.Fprintln(os.Stderr, string(jsonData))
+	os.Exit(1)
+}
+
+// Add this near the top after other function declarations
+func listTableTags(tableName string, table *tags.TagTable) {
+	fmt.Fprintf(os.Stderr, "Table %s has %d tags:\n", tableName, len(table.Tags))
+	count := 0
+	for tagID, tagDef := range table.Tags {
+		fmt.Fprintf(os.Stderr, "  %s: %s\n", tagID, tagDef.Name)
+		count++
+		if count >= 10 {
+			fmt.Fprintf(os.Stderr, "  ... and %d more\n", len(table.Tags)-10)
+			break
+		}
+	}
 }
 
 // extractMetadataFromData dynamically extracts metadata using tag definitions
-func extractMetadataFromData(data []byte, formatName string, verbose bool) []Field {
-	var fields []Field
+func extractMetadataFromData(data []byte, formatName string, verbose bool) []MetadataField {
+	var fields []MetadataField
 
-	// Try to find relevant tag tables for this format
+	// Find relevant tag tables
 	relevantTables := findRelevantTables(formatName)
 
 	if verbose {
-		fmt.Printf("Found %d relevant tag tables for format %s\n", len(relevantTables), formatName)
-		for _, tableName := range relevantTables {
-			fmt.Printf("  - %s\n", tableName)
+		fmt.Fprintf(os.Stderr, "Found %d relevant tables for format %s\n", len(relevantTables), formatName)
+		for _, t := range relevantTables {
+			fmt.Fprintf(os.Stderr, "  - %s\n", t)
 		}
-		fmt.Println()
 	}
 
 	// For each relevant table, try to extract tags
 	for _, tableName := range relevantTables {
 		table := tags.AllTags[tableName]
 		if table == nil {
+			if verbose {
+				fmt.Fprintf(os.Stderr, "Warning: table %s not found in AllTags\n", tableName)
+			}
 			continue
 		}
 
 		// Try different extraction methods based on common patterns
-		switch {
-		case strings.Contains(tableName, "Exif"):
-			// Try TIFF/EXIF style extraction
-			if exifFields := tryExtractTIFFStyle(data, tableName, table); len(exifFields) > 0 {
-				fields = append(fields, exifFields...)
+		lowerTableName := strings.ToLower(tableName)
+
+		// For JPEG format, try TIFF extraction on all tables
+		if formatName == "JPEG" {
+			if verbose {
+				fmt.Fprintf(os.Stderr, "Trying extraction for %s\n", tableName)
 			}
-		case strings.Contains(tableName, "PNG"):
-			// Try PNG chunk style extraction
-			if pngFields := tryExtractPNGStyle(data, tableName, table); len(pngFields) > 0 {
-				fields = append(fields, pngFields...)
+			if extractedFields := tryExtractTIFFStyle(data, tableName, table, verbose); len(extractedFields) > 0 {
+				if verbose {
+					fmt.Fprintf(os.Stderr, "Found %d fields in %s\n", len(extractedFields), tableName)
+				}
+				fields = append(fields, extractedFields...)
 			}
-		default:
-			// Try generic binary search
-			if binFields := tryExtractBinarySearch(data, tableName, table); len(binFields) > 0 {
-				fields = append(fields, binFields...)
+		} else {
+			// For other formats, use specific extraction methods
+			switch {
+			case strings.Contains(lowerTableName, "png"):
+				if pngFields := tryExtractPNGStyle(data, tableName, table); len(pngFields) > 0 {
+					fields = append(fields, pngFields...)
+				}
+			default:
+				if verbose {
+					fmt.Fprintf(os.Stderr, "Trying binary search for %s\n", tableName)
+				}
+				if binFields := tryExtractBinarySearch(data, tableName, table); len(binFields) > 0 {
+					fields = append(fields, binFields...)
+				}
 			}
 		}
 	}
@@ -145,9 +261,41 @@ func extractMetadataFromData(data []byte, formatName string, verbose bool) []Fie
 func findRelevantTables(formatName string) []string {
 	var tables []string
 
-	// Look for tables that contain the format name
+	// Always include specific well-known tables for JPEG
+	if formatName == "JPEG" {
+		// Add all EXIF-related tables
+		wellKnownTables := []string{
+			"Exif::Main", "EXIF::Main", "exif::Main",
+			"Exif::IFD0", "EXIF::IFD0", "exif::IFD0",
+			"Exif::SubIFD", "EXIF::SubIFD", "exif::SubIFD",
+			"Exif::GPS", "EXIF::GPS", "exif::GPS",
+			"IPTC::ApplicationRecord", "iptc::ApplicationRecord",
+			"IPTC::EnvelopeRecord", "iptc::EnvelopeRecord",
+			"XMP::dc", "xmp::dc",
+			"XMP::xmp", "xmp::xmp",
+		}
+
+		for _, tableName := range wellKnownTables {
+			if _, ok := tags.AllTags[tableName]; ok {
+				tables = append(tables, tableName)
+			}
+		}
+	}
+
+	// Then add all other matching tables
 	for tableName := range tags.AllTags {
-		// Direct format match
+		// Skip if already added
+		found := false
+		for _, t := range tables {
+			if t == tableName {
+				found = true
+				break
+			}
+		}
+		if found {
+			continue
+		}
+
 		if strings.HasPrefix(tableName, formatName+"::") {
 			tables = append(tables, tableName)
 			continue
@@ -156,17 +304,21 @@ func findRelevantTables(formatName string) []string {
 		// Common associations
 		switch formatName {
 		case "JPEG":
-			if strings.Contains(tableName, "Exif") ||
-				strings.Contains(tableName, "IPTC") ||
-				strings.Contains(tableName, "XMP") {
+			lowerTableName := strings.ToLower(tableName)
+			if strings.Contains(lowerTableName, "exif") ||
+				strings.Contains(lowerTableName, "iptc") ||
+				strings.Contains(lowerTableName, "xmp") ||
+				strings.Contains(lowerTableName, "jfif") ||
+				strings.Contains(lowerTableName, "ifd") ||
+				strings.Contains(lowerTableName, "gps") {
 				tables = append(tables, tableName)
 			}
 		case "PNG":
-			if strings.Contains(tableName, "PNG") {
+			if strings.Contains(strings.ToLower(tableName), "png") {
 				tables = append(tables, tableName)
 			}
 		case "MP3", "ID3":
-			if strings.Contains(tableName, "ID3") {
+			if strings.Contains(strings.ToLower(tableName), "id3") {
 				tables = append(tables, tableName)
 			}
 		}
@@ -176,82 +328,335 @@ func findRelevantTables(formatName string) []string {
 }
 
 // tryExtractTIFFStyle attempts TIFF/EXIF style extraction
-func tryExtractTIFFStyle(data []byte, tableName string, table *tags.TagTable) []Field {
-	var fields []Field
+func tryExtractTIFFStyle(data []byte, tableName string, table *tags.TagTable, verbose bool) []MetadataField {
+	var fields []MetadataField
+	lowerTableName := strings.ToLower(tableName)
 
-	// Look for TIFF header patterns
-	for offset := 0; offset < len(data)-8; offset++ {
-		// Check for TIFF headers
-		if offset+8 > len(data) {
-			break
+	// For JPEG files, look for APP segments
+	if len(data) >= 2 && data[0] == 0xFF && data[1] == 0xD8 {
+		// This is a JPEG file
+		if verbose {
+			fmt.Fprintf(os.Stderr, "Detected JPEG file, looking for APP segments\n")
 		}
+		offset := 2
+		for offset < len(data)-4 {
+			if data[offset] != 0xFF {
+				break
+			}
 
-		var byteOrder binary.ByteOrder
-		if data[offset] == 'I' && data[offset+1] == 'I' &&
-			data[offset+2] == 0x2A && data[offset+3] == 0x00 {
-			// Little-endian TIFF
-			byteOrder = binary.LittleEndian
-		} else if data[offset] == 'M' && data[offset+1] == 'M' &&
-			data[offset+2] == 0x00 && data[offset+3] == 0x2A {
-			// Big-endian TIFF
-			byteOrder = binary.BigEndian
-		} else {
-			continue
+			marker := data[offset+1]
+			if marker == 0xDA {
+				// Start of scan - no more headers
+				break
+			}
+
+			// Read segment length
+			if offset+4 > len(data) {
+				break
+			}
+			segmentLength := int(data[offset+2])<<8 | int(data[offset+3])
+
+			// Check for APP1 (EXIF or XMP)
+			if marker == 0xE1 && offset+10 <= len(data) {
+				// Check for "Exif\x00\x00"
+				if string(data[offset+4:offset+10]) == "Exif\x00\x00" {
+					if verbose {
+						fmt.Fprintf(os.Stderr, "Found EXIF APP1 segment at offset %d\n", offset)
+					}
+					// EXIF data starts after "Exif\x00\x00"
+					exifData := data[offset+10:]
+					// Only process EXIF data with non-IPTC tables
+					if !strings.Contains(strings.ToLower(tableName), "iptc") {
+						if exifFields := extractTIFFData(exifData, tableName, table, verbose); len(exifFields) > 0 {
+							fields = append(fields, exifFields...)
+						}
+					}
+				} else if offset+35 <= len(data) && string(data[offset+4:offset+33]) == "http://ns.adobe.com/xap/1.0/\x00" {
+					// XMP data
+					if verbose {
+						fmt.Fprintf(os.Stderr, "Found XMP APP1 segment at offset %d\n", offset)
+					}
+					if strings.Contains(lowerTableName, "xmp") {
+						// For now, just note we found it - XMP parsing would be added here
+						if verbose {
+							fmt.Fprintf(os.Stderr, "XMP parsing not yet implemented for table %s\n", tableName)
+						}
+					}
+				}
+			}
+
+			// Check for APP13 (IPTC)
+			if marker == 0xED && offset+18 <= len(data) && segmentLength >= 14 {
+				// Check for "Photoshop 3.0\x00"
+				if string(data[offset+4:offset+18]) == "Photoshop 3.0\x00" {
+					if verbose {
+						fmt.Fprintf(os.Stderr, "Found IPTC APP13 segment at offset %d, trying with table %s\n", offset, tableName)
+					}
+					// Parse IPTC data - only try on IPTC tables
+					if strings.Contains(strings.ToLower(tableName), "iptc") {
+						iptcData := data[offset+18 : offset+2+segmentLength]
+						if iptcFields := extractIPTCData(iptcData, tableName, table, verbose); len(iptcFields) > 0 {
+							fields = append(fields, iptcFields...)
+						}
+					}
+				}
+			}
+
+			// Move to next segment
+			offset += 2 + segmentLength
 		}
-
-		// Found TIFF header, try to parse IFD
-		ifdOffset := byteOrder.Uint32(data[offset+4 : offset+8])
-		if ifdFields := parseIFDGeneric(data[offset:], ifdOffset, byteOrder, tableName, table); len(ifdFields) > 0 {
-			fields = append(fields, ifdFields...)
+	} else {
+		// Not a JPEG, try direct TIFF extraction
+		if exifFields := extractTIFFData(data, tableName, table, verbose); len(exifFields) > 0 {
+			fields = append(fields, exifFields...)
 		}
 	}
 
 	return fields
 }
 
+// extractIPTCData extracts IPTC metadata
+func extractIPTCData(data []byte, tableName string, table *tags.TagTable, verbose bool) []MetadataField {
+	var fields []MetadataField
+	offset := 0
+
+	if verbose {
+		fmt.Fprintf(os.Stderr, "extractIPTCData called for table %s, data size %d\n", tableName, len(data))
+	}
+
+	// Keep track of repeating tags (like keywords)
+	tagValues := make(map[string][]string)
+
+	// Parse Photoshop Image Resources
+	for offset < len(data)-12 {
+		// Look for 8BIM marker
+		if offset+12 > len(data) || string(data[offset:offset+4]) != "8BIM" {
+			offset++
+			continue
+		}
+
+		// Resource ID
+		resourceID := int(data[offset+4])<<8 | int(data[offset+5])
+
+		// Skip name (pascal string)
+		nameLen := int(data[offset+6])
+		offset += 7 + nameLen
+		if nameLen%2 == 0 {
+			offset++ // Padding
+		}
+
+		// Resource data size
+		if offset+4 > len(data) {
+			break
+		}
+		dataSize := int(data[offset])<<24 | int(data[offset+1])<<16 | int(data[offset+2])<<8 | int(data[offset+3])
+		offset += 4
+
+		// IPTC data is in resource 0x0404
+		if resourceID == 0x0404 && offset+dataSize <= len(data) {
+			if verbose {
+				fmt.Fprintf(os.Stderr, "Found IPTC resource 0x0404, size %d\n", dataSize)
+			}
+
+			// Parse IPTC records
+			iptcOffset := offset
+			for iptcOffset < offset+dataSize-5 {
+				// IPTC record marker
+				if data[iptcOffset] != 0x1C {
+					iptcOffset++
+					continue
+				}
+
+				record := int(data[iptcOffset+1])
+				dataSet := int(data[iptcOffset+2])
+				recordSize := int(data[iptcOffset+3])<<8 | int(data[iptcOffset+4])
+
+				if iptcOffset+5+recordSize > offset+dataSize {
+					break
+				}
+
+				// Create tag key like "2:25" for record 2, dataset 25
+				tagKey := fmt.Sprintf("%d:%d", record, dataSet)
+
+				// Also try with leading zeros for single digits
+				var altKey string
+				if dataSet < 10 {
+					altKey = fmt.Sprintf("%d:0%d", record, dataSet)
+				}
+
+				// Try different formats
+				tagDef, found := table.Tags[tagKey]
+				if !found && altKey != "" {
+					tagDef, found = table.Tags[altKey]
+				}
+				if !found {
+					// Try hex format
+					tagKeyHex := fmt.Sprintf("0x%02X%02X", record, dataSet)
+					tagDef, found = table.Tags[tagKeyHex]
+				}
+
+				if found {
+					value := string(data[iptcOffset+5 : iptcOffset+5+recordSize])
+
+					if verbose {
+						fmt.Fprintf(os.Stderr, "Found IPTC tag %d:%d (%s): %s\n", record, dataSet, tagDef.Name, value)
+					}
+
+					// Collect repeating tags
+					fieldKey := fmt.Sprintf("%s:%d:%d", tableName, record, dataSet)
+					tagValues[fieldKey] = append(tagValues[fieldKey], value)
+				} else if verbose {
+					fmt.Fprintf(os.Stderr, "IPTC tag %d:%d not found in table %s (tried keys: %s, %s)\n", record, dataSet, tableName, tagKey, altKey)
+					// Debug: show what tags ARE in the table
+					if len(table.Tags) < 10 {
+						fmt.Fprintf(os.Stderr, "  Available tags in %s: ", tableName)
+						for k := range table.Tags {
+							fmt.Fprintf(os.Stderr, "%s ", k)
+						}
+						fmt.Fprintf(os.Stderr, "\n")
+					}
+				}
+
+				iptcOffset += 5 + recordSize
+			}
+		}
+
+		offset += dataSize
+		if dataSize%2 == 1 {
+			offset++ // Padding
+		}
+	}
+
+	// Convert collected values to fields
+	for fieldKey, values := range tagValues {
+		parts := strings.Split(fieldKey, ":")
+		if len(parts) >= 3 {
+			record, _ := strconv.Atoi(parts[len(parts)-2])
+			dataset, _ := strconv.Atoi(parts[len(parts)-1])
+			tagKey := fmt.Sprintf("%d:%d", record, dataset)
+
+			tagDef, found := table.Tags[tagKey]
+			if !found && dataset < 10 {
+				// Try with leading zero
+				tagKey = fmt.Sprintf("%d:0%d", record, dataset)
+				tagDef, found = table.Tags[tagKey]
+			}
+
+			if found {
+				var fieldValue interface{}
+				if len(values) == 1 {
+					fieldValue = values[0]
+				} else {
+					fieldValue = values
+				}
+
+				field := MetadataField{
+					Table:       tableName,
+					TagID:       fmt.Sprintf("%d:%d", record, dataset),
+					Name:        tagDef.Name,
+					Value:       fieldValue,
+					Description: tagDef.Description,
+				}
+
+				if field.Name == "" {
+					field.Name = fmt.Sprintf("IPTC:%d:%d", record, dataset)
+				}
+
+				fields = append(fields, field)
+			}
+		}
+	}
+
+	return fields
+}
+
+// extractTIFFData extracts metadata from TIFF-formatted data
+func extractTIFFData(data []byte, tableName string, table *tags.TagTable, verbose bool) []MetadataField {
+	var fields []MetadataField
+
+	if len(data) < 8 {
+		return fields
+	}
+
+	var byteOrder binary.ByteOrder
+	if data[0] == 'I' && data[1] == 'I' &&
+		data[2] == 0x2A && data[3] == 0x00 {
+		byteOrder = binary.LittleEndian
+		if verbose {
+			fmt.Fprintf(os.Stderr, "Found little-endian TIFF header\n")
+		}
+	} else if data[0] == 'M' && data[1] == 'M' &&
+		data[2] == 0x00 && data[3] == 0x2A {
+		byteOrder = binary.BigEndian
+		if verbose {
+			fmt.Fprintf(os.Stderr, "Found big-endian TIFF header\n")
+		}
+	} else {
+		return fields
+	}
+
+	// Found TIFF header, parse IFD
+	ifdOffset := byteOrder.Uint32(data[4:8])
+	if verbose {
+		fmt.Fprintf(os.Stderr, "IFD offset: %d\n", ifdOffset)
+	}
+	if ifdFields := parseIFDGeneric(data, ifdOffset, byteOrder, tableName, table, verbose); len(ifdFields) > 0 {
+		fields = append(fields, ifdFields...)
+	}
+
+	return fields
+}
+
 // parseIFDGeneric parses an IFD using any tag table
-func parseIFDGeneric(data []byte, ifdOffset uint32, byteOrder binary.ByteOrder, tableName string, table *tags.TagTable) []Field {
-	var fields []Field
+func parseIFDGeneric(data []byte, ifdOffset uint32, byteOrder binary.ByteOrder, tableName string, table *tags.TagTable, verbose bool) []MetadataField {
+	var fields []MetadataField
 
 	if int(ifdOffset) >= len(data)-2 {
 		return fields
 	}
 
-	// Read entry count
 	entryCount := byteOrder.Uint16(data[ifdOffset : ifdOffset+2])
-	if entryCount > 1000 { // Sanity check
+	if entryCount > 1000 {
 		return fields
+	}
+
+	if verbose {
+		fmt.Fprintf(os.Stderr, "IFD has %d entries\n", entryCount)
 	}
 
 	offset := ifdOffset + 2
 
-	// Process each entry
 	for i := 0; i < int(entryCount); i++ {
 		if int(offset+12) > len(data) {
 			break
 		}
 
-		// Read IFD entry
 		tagID := byteOrder.Uint16(data[offset : offset+2])
 		format := byteOrder.Uint16(data[offset+2 : offset+4])
 		count := byteOrder.Uint32(data[offset+4 : offset+8])
 		valueOffset := data[offset+8 : offset+12]
 
-		// Look up tag in table
+		// Look up tag
 		tagKey := fmt.Sprintf("0x%X", tagID)
 		tagDef, found := table.Tags[tagKey]
 		if !found {
-			// Try decimal format
 			tagKey = fmt.Sprintf("%d", tagID)
 			tagDef, found = table.Tags[tagKey]
 		}
 
+		if verbose && !found {
+			fmt.Fprintf(os.Stderr, "Tag %s (0x%X) not found in table %s\n", tagKey, tagID, tableName)
+		}
+
 		if found {
-			// Extract value
 			value := extractValueGeneric(data, valueOffset, format, count, byteOrder)
 
-			field := Field{
-				TableName:   tableName,
+			if verbose {
+				fmt.Fprintf(os.Stderr, "Found tag %s: %v\n", tagDef.Name, value)
+			}
+
+			field := MetadataField{
+				Table:       tableName,
 				TagID:       tagKey,
 				Name:        tagDef.Name,
 				Value:       value,
@@ -262,7 +667,7 @@ func parseIFDGeneric(data []byte, ifdOffset uint32, byteOrder binary.ByteOrder, 
 				field.Name = tagKey
 			}
 
-			// Apply value mappings if available
+			// Apply value mappings
 			if len(tagDef.Values) > 0 {
 				if mapped := mapValue(value, tagDef.Values); mapped != "" {
 					field.Value = mapped
@@ -280,7 +685,6 @@ func parseIFDGeneric(data []byte, ifdOffset uint32, byteOrder binary.ByteOrder, 
 
 // extractValueGeneric extracts a value based on TIFF format codes
 func extractValueGeneric(data []byte, valueBytes []byte, format uint16, count uint32, byteOrder binary.ByteOrder) interface{} {
-	// Calculate component size
 	var componentSize uint32
 	switch format {
 	case 1, 2, 6, 7: // BYTE, ASCII, SBYTE, UNDEFINED
@@ -297,12 +701,10 @@ func extractValueGeneric(data []byte, valueBytes []byte, format uint16, count ui
 
 	totalSize := componentSize * count
 
-	// Get value data
 	var valueData []byte
 	if totalSize <= 4 {
 		valueData = valueBytes[:totalSize]
 	} else {
-		// Value at offset
 		offset := byteOrder.Uint32(valueBytes)
 		if int(offset+totalSize) <= len(data) {
 			valueData = data[offset : offset+totalSize]
@@ -311,7 +713,6 @@ func extractValueGeneric(data []byte, valueBytes []byte, format uint16, count ui
 		}
 	}
 
-	// Parse based on format
 	switch format {
 	case 2: // ASCII
 		if len(valueData) > 0 && valueData[len(valueData)-1] == 0 {
@@ -323,22 +724,36 @@ func extractValueGeneric(data []byte, valueBytes []byte, format uint16, count ui
 		if count == 1 && len(valueData) >= 2 {
 			return byteOrder.Uint16(valueData)
 		}
-		return fmt.Sprintf("%d values", count)
+		vals := make([]uint16, 0, count)
+		for i := uint32(0); i < count && int(i*2+2) <= len(valueData); i++ {
+			vals = append(vals, byteOrder.Uint16(valueData[i*2:]))
+		}
+		if len(vals) == 1 {
+			return vals[0]
+		}
+		return vals
 
 	case 4: // LONG
 		if count == 1 && len(valueData) >= 4 {
 			return byteOrder.Uint32(valueData)
 		}
-		return fmt.Sprintf("%d values", count)
+		vals := make([]uint32, 0, count)
+		for i := uint32(0); i < count && int(i*4+4) <= len(valueData); i++ {
+			vals = append(vals, byteOrder.Uint32(valueData[i*4:]))
+		}
+		if len(vals) == 1 {
+			return vals[0]
+		}
+		return vals
 
 	case 5: // RATIONAL
 		if count == 1 && len(valueData) >= 8 {
 			num := byteOrder.Uint32(valueData[0:4])
 			den := byteOrder.Uint32(valueData[4:8])
 			if den == 0 {
-				return "0"
+				return 0.0
 			}
-			return fmt.Sprintf("%d/%d", num, den)
+			return float64(num) / float64(den)
 		}
 		return fmt.Sprintf("%d rationals", count)
 
@@ -351,10 +766,9 @@ func extractValueGeneric(data []byte, valueBytes []byte, format uint16, count ui
 }
 
 // tryExtractPNGStyle attempts PNG chunk style extraction
-func tryExtractPNGStyle(data []byte, tableName string, table *tags.TagTable) []Field {
-	var fields []Field
+func tryExtractPNGStyle(data []byte, tableName string, table *tags.TagTable) []MetadataField {
+	var fields []MetadataField
 
-	// Look for PNG signature
 	pngSig := []byte{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A}
 	if len(data) < 8 || !bytes.Equal(data[:8], pngSig) {
 		return fields
@@ -362,23 +776,19 @@ func tryExtractPNGStyle(data []byte, tableName string, table *tags.TagTable) []F
 
 	offset := 8
 	for offset < len(data)-12 {
-		// Read chunk length
 		length := binary.BigEndian.Uint32(data[offset : offset+4])
 		if length > uint32(len(data)) {
 			break
 		}
 
-		// Read chunk type
 		chunkType := string(data[offset+4 : offset+8])
 
-		// Check if we have a tag for this chunk type
 		if tagDef, found := table.Tags[chunkType]; found {
-			// Extract chunk data
-			if int(offset+8+length) <= len(data) {
-				chunkData := data[offset+8 : offset+8+length]
+			if offset+8+int(length) <= len(data) {
+				chunkData := data[offset+8 : offset+8+int(length)]
 
-				field := Field{
-					TableName:   tableName,
+				field := MetadataField{
+					Table:       tableName,
 					TagID:       chunkType,
 					Name:        tagDef.Name,
 					Value:       fmt.Sprintf("%d bytes", len(chunkData)),
@@ -389,7 +799,7 @@ func tryExtractPNGStyle(data []byte, tableName string, table *tags.TagTable) []F
 					field.Name = chunkType
 				}
 
-				// For text chunks, try to extract text
+				// For text chunks, extract text
 				if chunkType == "tEXt" || chunkType == "iTXt" || chunkType == "zTXt" {
 					if nullPos := bytes.IndexByte(chunkData, 0); nullPos >= 0 {
 						keyword := string(chunkData[:nullPos])
@@ -403,10 +813,8 @@ func tryExtractPNGStyle(data []byte, tableName string, table *tags.TagTable) []F
 			}
 		}
 
-		// Move to next chunk (length + type + data + CRC)
 		offset += 8 + int(length) + 4
 
-		// Check for IEND
 		if chunkType == "IEND" {
 			break
 		}
@@ -416,48 +824,9 @@ func tryExtractPNGStyle(data []byte, tableName string, table *tags.TagTable) []F
 }
 
 // tryExtractBinarySearch attempts generic binary pattern matching
-func tryExtractBinarySearch(data []byte, tableName string, table *tags.TagTable) []Field {
-	var fields []Field
-
-	// For each tag in the table, search for patterns
-	for tagID, tagDef := range table.Tags {
-		// Skip if no name
-		if tagDef.Name == "" {
-			continue
-		}
-
-		// Try to find tag ID as hex pattern in data
-		if strings.HasPrefix(tagID, "0x") {
-			// Convert hex ID to search pattern
-			// This is a simplified example - real implementation would be more sophisticated
-			continue
-		}
-
-		// For string tags, search for the tag name
-		pattern := []byte(tagDef.Name)
-		if idx := bytes.Index(data, pattern); idx >= 0 {
-			// Found the pattern, extract some context
-			start := idx - 20
-			if start < 0 {
-				start = 0
-			}
-			end := idx + len(pattern) + 20
-			if end > len(data) {
-				end = len(data)
-			}
-
-			field := Field{
-				TableName:   tableName,
-				TagID:       tagID,
-				Name:        tagDef.Name,
-				Value:       fmt.Sprintf("Found at offset %d", idx),
-				Description: tagDef.Description,
-			}
-
-			fields = append(fields, field)
-		}
-	}
-
+func tryExtractBinarySearch(data []byte, tableName string, table *tags.TagTable) []MetadataField {
+	var fields []MetadataField
+	// Simplified for now - could be enhanced
 	return fields
 }
 
@@ -468,50 +837,4 @@ func mapValue(value interface{}, mappings map[string]string) string {
 		return mapped
 	}
 	return ""
-}
-
-// displayFields displays extracted fields
-func displayFields(fields []Field, verbose bool) {
-	if len(fields) == 0 {
-		fmt.Println("No metadata found")
-		return
-	}
-
-	// Group by table name
-	grouped := make(map[string][]Field)
-	for _, field := range fields {
-		grouped[field.TableName] = append(grouped[field.TableName], field)
-	}
-
-	// Display each group
-	first := true
-	for tableName, tableFields := range grouped {
-		if !first {
-			fmt.Println()
-		}
-		first = false
-
-		fmt.Printf("=== %s ===\n", tableName)
-
-		// Find max name length for alignment
-		maxLen := 0
-		for _, f := range tableFields {
-			if len(f.Name) > maxLen {
-				maxLen = len(f.Name)
-			}
-		}
-
-		// Display fields
-		for _, f := range tableFields {
-			if verbose {
-				fmt.Printf("%-*s [%s] : %v", maxLen, f.Name, f.TagID, f.Value)
-				if f.Description != "" {
-					fmt.Printf(" (%s)", f.Description)
-				}
-				fmt.Println()
-			} else {
-				fmt.Printf("%-*s : %v\n", maxLen, f.Name, f.Value)
-			}
-		}
-	}
 }

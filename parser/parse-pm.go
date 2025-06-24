@@ -1,3 +1,5 @@
+// File: parser/parse-pm.go
+
 package parser
 
 import (
@@ -7,8 +9,19 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 )
+
+// isNumeric checks if a string contains only digits
+func isNumeric(s string) bool {
+	for _, c := range s {
+		if c < '0' || c > '9' {
+			return false
+		}
+	}
+	return len(s) > 0
+}
 
 // ParsePMFiles recursively parses all .pm files in the given directory
 func ParsePMFiles(rootDir string) (*ParsedData, error) {
@@ -68,8 +81,9 @@ func parsePMFile(path string, data *ParsedData) error {
 	// Regex patterns
 	packageRe := regexp.MustCompile(`^\s*package\s+(.+?)\s*;`)
 	tagTableRe := regexp.MustCompile(`^\s*%([A-Za-z0-9_:]+)\s*=\s*\(`)
-	tagDefStartRe := regexp.MustCompile(`^\s*(?:'([^']+)'|"([^"]+)"|0x([0-9a-fA-F]+)|(\w+))\s*=>\s*[\[\{]?\s*$`)
-	tagDefInlineRe := regexp.MustCompile(`^\s*(?:'([^']+)'|"([^"]+)"|0x([0-9a-fA-F]+)|(\w+))\s*=>\s*(.+?),?\s*$`)
+	// Updated patterns to be more flexible with whitespace and brackets
+	tagDefStartRe := regexp.MustCompile(`^\s*(?:'([^']+)'|"([^"]+)"|0x([0-9a-fA-F]+)|(\d+)|(\w+))\s*=>\s*\{`)
+	tagDefInlineRe := regexp.MustCompile(`^\s*(?:'([^']+)'|"([^"]+)"|0x([0-9a-fA-F]+)|(\d+)|(\w+))\s*=>\s*(.+?)(?:,\s*)?$`)
 	nameRe := regexp.MustCompile(`Name\s*=>\s*'([^']+)'`)
 	descRe := regexp.MustCompile(`Description\s*=>\s*'([^']+)'`)
 	notesRe := regexp.MustCompile(`Notes\s*=>\s*(?:'([^']+)'|q\{([^}]+)\})`)
@@ -88,20 +102,6 @@ func parsePMFile(path string, data *ParsedData) error {
 			continue
 		}
 
-		// Track bracket/paren depth
-		for _, ch := range line {
-			switch ch {
-			case '{', '[':
-				bracketDepth++
-			case '}', ']':
-				bracketDepth--
-			case '(':
-				parenDepth++
-			case ')':
-				parenDepth--
-			}
-		}
-
 		// Look for package declaration
 		if matches := packageRe.FindStringSubmatch(line); matches != nil {
 			packageName = matches[1]
@@ -110,6 +110,13 @@ func parsePMFile(path string, data *ParsedData) error {
 
 		// Look for tag table start
 		if matches := tagTableRe.FindStringSubmatch(line); matches != nil {
+			// Save any pending tag
+			if currentTable != nil && currentTag != nil && currentKey != "" {
+				currentTable.Tags[currentKey] = currentTag
+				currentTag = nil
+				currentKey = ""
+			}
+
 			tableName := matches[1]
 			// Extract the actual table name from the full name
 			// e.g., Image::ExifTool::JPEG::Main -> Main
@@ -124,14 +131,56 @@ func parsePMFile(path string, data *ParsedData) error {
 
 			// Store with full name for uniqueness
 			fullName := moduleName + "::" + shortName
+
+			// Debug IPTC tables
+			if strings.Contains(moduleName, "IPTC") {
+				fmt.Fprintf(os.Stderr, "DEBUG: Found IPTC table: %s (module: %s, package: %s)\n", fullName, moduleName, packageName)
+			}
+
+			// Check for duplicates and make unique if needed
+			if _, exists := data.TagTables[fullName]; exists {
+				// Add package suffix to make unique
+				packageSuffix := strings.ReplaceAll(packageName, "Image::ExifTool::", "")
+				packageSuffix = strings.ReplaceAll(packageSuffix, "::", "_")
+				fullName = moduleName + "::" + shortName + "_" + packageSuffix
+			}
+
 			data.TagTables[fullName] = currentTable
 
 			inTagTable = true
+			inTagDef = false
+			bracketDepth = 0
+			parenDepth = 1 // We just saw the opening paren
 			continue
 		}
 
 		if !inTagTable {
 			continue
+		}
+
+		// Track bracket/paren depth (do this after table detection)
+		for _, ch := range line {
+			switch ch {
+			case '{', '[':
+				bracketDepth++
+			case '}', ']':
+				bracketDepth--
+			case '(':
+				parenDepth++
+			case ')':
+				parenDepth--
+			}
+		}
+
+		// Debug IPTC lines
+		if currentTable != nil && strings.Contains(currentTable.ModuleName, "IPTC") &&
+			strings.TrimSpace(line) != "" && !strings.HasPrefix(strings.TrimSpace(line), "#") {
+			// Show first few characters of the line for debugging
+			preview := line
+			if len(preview) > 60 {
+				preview = preview[:60] + "..."
+			}
+			fmt.Fprintf(os.Stderr, "DEBUG: IPTC line (depth %d/%d, inDef=%t): %s\n", bracketDepth, parenDepth, inTagDef, preview)
 		}
 
 		// Check for table end
@@ -142,17 +191,20 @@ func parsePMFile(path string, data *ParsedData) error {
 		}
 
 		// Skip table metadata like NOTES, GROUPS, etc. at table level
-		if bracketDepth == 0 && (strings.Contains(line, "NOTES =>") ||
+		if !inTagDef && bracketDepth == 0 && (strings.Contains(line, "NOTES =>") ||
 			strings.Contains(line, "GROUPS =>") ||
 			strings.Contains(line, "PROCESS_PROC =>") ||
 			strings.Contains(line, "VARS =>") ||
 			strings.Contains(line, "FIRST_ENTRY =>") ||
-			strings.Contains(line, "TAG_PREFIX =>")) {
+			strings.Contains(line, "TAG_PREFIX =>") ||
+			strings.Contains(line, "WRITE_PROC =>") ||
+			strings.Contains(line, "CHECK_PROC =>") ||
+			strings.Contains(line, "WRITABLE =>")) {
 			continue
 		}
 
 		// Look for tag definition start (multiline)
-		if !inTagDef && bracketDepth == 0 {
+		if !inTagDef {
 			if matches := tagDefStartRe.FindStringSubmatch(line); matches != nil {
 				// Save previous tag
 				if currentTag != nil && currentKey != "" {
@@ -161,6 +213,28 @@ func parsePMFile(path string, data *ParsedData) error {
 
 				// Extract key from matches
 				currentKey = extractTagKey(matches)
+
+				// Debug IPTC parsing
+				if strings.Contains(moduleName, "IPTC") && currentKey != "" {
+					fmt.Fprintf(os.Stderr, "DEBUG: IPTC tag found: %s (from line: %s)\n", currentKey, line)
+				}
+
+				// Special handling for IPTC tags
+				if currentTable != nil && strings.Contains(currentTable.ModuleName, "IPTC") && isNumeric(currentKey) {
+					// Convert single number to IPTC format (record:dataset)
+					num, _ := strconv.Atoi(currentKey)
+					if num < 256 {
+						// Single byte - assume record 2
+						currentKey = fmt.Sprintf("2:%d", num)
+					} else {
+						// Two bytes encoded
+						record := num >> 8
+						dataset := num & 0xFF
+						currentKey = fmt.Sprintf("%d:%d", record, dataset)
+					}
+					fmt.Fprintf(os.Stderr, "DEBUG: IPTC tag converted to: %s\n", currentKey)
+				}
+
 				currentTag = &TagDef{
 					ID:     currentKey,
 					Groups: make(map[string]string),
@@ -178,8 +252,29 @@ func parsePMFile(path string, data *ParsedData) error {
 				}
 
 				// Extract key from matches
-				currentKey = extractTagKey(matches[:5]) // first 4 groups are the key patterns
-				value := matches[5]
+				currentKey = extractTagKey(matches[:6]) // first 5 groups are the key patterns
+				value := matches[6]
+
+				// Debug IPTC parsing
+				if strings.Contains(moduleName, "IPTC") && currentKey != "" {
+					fmt.Fprintf(os.Stderr, "DEBUG: IPTC inline tag found: %s = %s (from line: %s)\n", currentKey, value, line)
+				}
+
+				// Special handling for IPTC tags
+				if currentTable != nil && strings.Contains(currentTable.ModuleName, "IPTC") && isNumeric(currentKey) {
+					// Convert single number to IPTC format (record:dataset)
+					num, _ := strconv.Atoi(currentKey)
+					if num < 256 {
+						// Single byte - assume record 2
+						currentKey = fmt.Sprintf("2:%d", num)
+					} else {
+						// Two bytes encoded
+						record := num >> 8
+						dataset := num & 0xFF
+						currentKey = fmt.Sprintf("%d:%d", record, dataset)
+					}
+					fmt.Fprintf(os.Stderr, "DEBUG: IPTC tag converted to: %s\n", currentKey)
+				}
 
 				currentTag = &TagDef{
 					ID:     currentKey,
@@ -254,7 +349,7 @@ func parsePMFile(path string, data *ParsedData) error {
 			}
 
 			// Check if tag definition is complete
-			if bracketDepth == 0 && (strings.Contains(line, "},") || strings.Contains(line, "}]")) {
+			if bracketDepth == 0 && (strings.Contains(line, "},") || strings.Contains(line, "}")) {
 				inTagDef = false
 				if currentTag != nil && currentKey != "" {
 					currentTable.Tags[currentKey] = currentTag
@@ -268,6 +363,22 @@ func parsePMFile(path string, data *ParsedData) error {
 	// Save last tag if any
 	if currentTable != nil && currentTag != nil && currentKey != "" {
 		currentTable.Tags[currentKey] = currentTag
+	}
+
+	// Debug: Report IPTC tag counts
+	if strings.Contains(moduleName, "IPTC") && currentTable != nil {
+		fmt.Fprintf(os.Stderr, "DEBUG: IPTC table %s has %d tags\n", moduleName, len(currentTable.Tags))
+		if len(currentTable.Tags) > 0 {
+			count := 0
+			for id, tag := range currentTable.Tags {
+				fmt.Fprintf(os.Stderr, "  Tag %s: %s\n", id, tag.Name)
+				count++
+				if count >= 10 {
+					fmt.Fprintf(os.Stderr, "  ... and %d more\n", len(currentTable.Tags)-10)
+					break
+				}
+			}
+		}
 	}
 
 	// Extract file type associations from the module
@@ -286,6 +397,8 @@ func extractTagKey(matches []string) string {
 		return "0x" + strings.ToUpper(matches[3])
 	} else if matches[4] != "" {
 		return matches[4]
+	} else if matches[5] != "" {
+		return matches[5]
 	}
 	return ""
 }
@@ -416,9 +529,9 @@ func generateTagFile(tableName string, table *TagTable, outputDir string) error 
 	}
 	defer file.Close()
 
-	// Create safe variable name
-	// e.g., "JPEG::Main" -> "JPEGMain"
-	varName := strings.ReplaceAll(tableName, "::", "") + "Tags"
+	// Create variable name that matches the unique table name
+	// This ensures no conflicts when we have similar table names
+	varName := generateVarName(tableName)
 
 	fmt.Fprintf(file, "// Code generated by gen-tags. DO NOT EDIT.\n\n")
 	fmt.Fprintf(file, "package tags\n\n")
@@ -522,11 +635,38 @@ func generateInitFile(data *ParsedData, outputDir string) error {
 	fmt.Fprintf(file, "var AllTags = map[string]*TagTable{\n")
 
 	for tableName := range data.TagTables {
-		varName := strings.ReplaceAll(tableName, "::", "") + "Tags"
+		varName := generateVarName(tableName)
 		fmt.Fprintf(file, "\t%q: &%s,\n", tableName, varName)
 	}
 
 	fmt.Fprintf(file, "}\n")
 
 	return nil
+}
+
+// generateVarName generates a unique variable name from a table name
+func generateVarName(tableName string) string {
+	// To ensure uniqueness, we keep underscores between major parts
+	// NikonCustom::SettingsD500 -> NikonCustom_SettingsD500_Tags
+	// Nikon::CustomSettingsD500 -> Nikon_CustomSettingsD500_Tags
+
+	// Replace :: with _
+	safeName := strings.ReplaceAll(tableName, "::", "_")
+
+	// Convert each part to have initial capital
+	parts := strings.Split(safeName, "_")
+	result := []string{}
+	for _, part := range parts {
+		if len(part) > 0 {
+			// Capitalize first letter
+			capitalized := strings.ToUpper(part[:1])
+			if len(part) > 1 {
+				capitalized += part[1:]
+			}
+			result = append(result, capitalized)
+		}
+	}
+
+	// Join with underscores and add Tags suffix
+	return strings.Join(result, "_") + "_Tags"
 }
