@@ -1,6 +1,6 @@
 // File: types.go
 
-package tags
+package main
 
 // TagTable represents tags from a single PM module/table
 type TagTable struct {

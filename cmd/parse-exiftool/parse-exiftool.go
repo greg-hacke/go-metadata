@@ -1,0 +1,322 @@
+package main
+
+import (
+	"bufio"
+	"fmt"
+	"os"
+	"regexp"
+	"strings"
+)
+
+type FileTypeData struct {
+	Extensions   map[string][]string // extension -> [type, description]
+	MagicNumbers map[string]string   // type -> magic pattern
+	TestOrder    []string            // order to test files
+	ModuleNames  map[string]string   // type -> module name
+}
+
+func parseExifTool(exifToolPath string) (*FileTypeData, error) {
+	content, err := os.ReadFile(exifToolPath)
+	if err != nil {
+		return nil, err
+	}
+
+	data := &FileTypeData{
+		Extensions:   make(map[string][]string),
+		MagicNumbers: make(map[string]string),
+		ModuleNames:  make(map[string]string),
+	}
+
+	text := string(content)
+
+	// Parse %fileTypeLookup
+	data.Extensions = parseFileTypeLookup(text)
+
+	// Parse %magicNumber
+	data.MagicNumbers = parseMagicNumbers(text)
+
+	// Parse @fileTypes
+	data.TestOrder = parseFileTypes(text)
+
+	// Parse %moduleName
+	data.ModuleNames = parseModuleNames(text)
+
+	return data, nil
+}
+
+func parseFileTypeLookup(content string) map[string][]string {
+	result := make(map[string][]string)
+
+	// Find the %fileTypeLookup section
+	start := strings.Index(content, "%fileTypeLookup = (")
+	if start == -1 {
+		fmt.Println("Warning: Could not find %fileTypeLookup")
+		return result
+	}
+
+	// Find the closing );
+	depth := 0
+	end := start
+	for i := start; i < len(content); i++ {
+		if content[i] == '(' {
+			depth++
+		} else if content[i] == ')' {
+			depth--
+			if depth == 0 && i > start && content[i+1] == ';' {
+				end = i + 2
+				break
+			}
+		}
+	}
+
+	section := content[start:end]
+
+	// Parse entries like: '360' => ['MOV',  'GoPro 360 video'],
+	// Note the actual format uses single quotes around extensions
+	re := regexp.MustCompile(`'([^']+)'\s*=>\s*(\[.*?\]|'[^']+')`)
+	matches := re.FindAllStringSubmatch(section, -1)
+
+	for _, match := range matches {
+		if len(match) >= 3 {
+			ext := match[1]
+			value := strings.TrimSpace(match[2])
+
+			if strings.HasPrefix(value, "[") {
+				// Parse array format: ['MOV', 'description']
+				re2 := regexp.MustCompile(`'([^']+)'`)
+				parts := re2.FindAllStringSubmatch(value, -1)
+				if len(parts) >= 1 {
+					fileType := parts[0][1]
+					desc := ""
+					if len(parts) >= 2 {
+						desc = parts[1][1]
+					}
+					result[ext] = []string{fileType, desc}
+				}
+			} else if strings.HasPrefix(value, "'") {
+				// Simple reference: 'JPEG'
+				fileType := strings.Trim(value, "'")
+				result[ext] = []string{fileType, ""}
+			}
+		}
+	}
+
+	fmt.Printf("Found %d extensions\n", len(result))
+	return result
+}
+
+func parseMagicNumbers(content string) map[string]string {
+	result := make(map[string]string)
+
+	start := strings.Index(content, "%magicNumber = (")
+	if start == -1 {
+		fmt.Println("Warning: Could not find %magicNumber")
+		return result
+	}
+
+	// Find the closing );
+	depth := 0
+	end := start
+	for i := start; i < len(content); i++ {
+		if content[i] == '(' {
+			depth++
+		} else if content[i] == ')' {
+			depth--
+			if depth == 0 && i > start && content[i+1] == ';' {
+				end = i + 2
+				break
+			}
+		}
+	}
+
+	section := content[start:end]
+
+	// Parse entries like: AA   => '.{4}\x57\x90\x75\x36',
+	// Note: No quotes around the keys
+	re := regexp.MustCompile(`(?m)^\s*(\w+)\s*=>\s*'([^']+)'`)
+	matches := re.FindAllStringSubmatch(section, -1)
+
+	for _, match := range matches {
+		if len(match) >= 3 {
+			fileType := match[1]
+			pattern := match[2]
+			result[fileType] = pattern
+		}
+	}
+
+	fmt.Printf("Found %d magic numbers\n", len(result))
+	return result
+}
+
+func parseFileTypes(content string) []string {
+	var result []string
+
+	start := strings.Index(content, "@fileTypes = qw(")
+	if start == -1 {
+		fmt.Println("Warning: Could not find @fileTypes")
+		return result
+	}
+
+	end := strings.Index(content[start:], ");")
+	if end == -1 {
+		return result
+	}
+
+	section := content[start : start+end]
+
+	// Extract types from qw() list - they're space-separated
+	// Remove the "@fileTypes = qw(" part
+	section = strings.TrimPrefix(section, "@fileTypes = qw(")
+
+	// Split by whitespace and filter
+	parts := strings.Fields(section)
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part != "" && !strings.Contains(part, "=") {
+			result = append(result, part)
+		}
+	}
+
+	fmt.Printf("Found %d file types in test order\n", len(result))
+	return result
+}
+
+func parseModuleNames(content string) map[string]string {
+	result := make(map[string]string)
+
+	// Look for "my %moduleName"
+	start := strings.Index(content, "my %moduleName = (")
+	if start == -1 {
+		// Try without "my"
+		start = strings.Index(content, "%moduleName = (")
+		if start == -1 {
+			fmt.Println("Warning: Could not find %moduleName")
+			return result
+		}
+	}
+
+	// Find the closing );
+	depth := 0
+	end := start
+	for i := start; i < len(content); i++ {
+		if content[i] == '(' {
+			depth++
+		} else if content[i] == ')' {
+			depth--
+			if depth == 0 && i > start && content[i+1] == ';' {
+				end = i + 2
+				break
+			}
+		}
+	}
+
+	section := content[start:end]
+
+	// Parse entries - they may use different quote styles
+	re := regexp.MustCompile(`(?m)^\s*(\w+)\s*=>\s*(?:'([^']*)'|"([^"]*)"|\b(\w+)\b)`)
+	matches := re.FindAllStringSubmatch(section, -1)
+
+	for _, match := range matches {
+		if len(match) >= 2 {
+			key := match[1]
+			value := ""
+			// Check which capture group matched
+			for i := 2; i < len(match); i++ {
+				if match[i] != "" {
+					value = match[i]
+					break
+				}
+			}
+			result[key] = value
+		}
+	}
+
+	fmt.Printf("Found %d module names\n", len(result))
+	return result
+}
+
+func generateGoFile(data *FileTypeData, outputPath string) error {
+	file, err := os.Create(outputPath)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	w := bufio.NewWriter(file)
+
+	// Write header
+	fmt.Fprintln(w, "// Code generated by parse-exiftool.go; DO NOT EDIT.")
+	fmt.Fprintln(w, "")
+	fmt.Fprintln(w, "package tags")
+	fmt.Fprintln(w, "")
+	fmt.Fprintln(w, "// ExifToolFileTypes contains file identification data extracted from ExifTool")
+	fmt.Fprintln(w, "var ExifToolFileTypes = struct {")
+	fmt.Fprintln(w, "    Extensions   map[string]FileTypeInfo")
+	fmt.Fprintln(w, "    MagicNumbers map[string]string")
+	fmt.Fprintln(w, "    TestOrder    []string")
+	fmt.Fprintln(w, "    ModuleNames  map[string]string")
+	fmt.Fprintln(w, "}{")
+
+	// Write Extensions
+	fmt.Fprintln(w, "    Extensions: map[string]FileTypeInfo{")
+	for ext, info := range data.Extensions {
+		desc := ""
+		if len(info) > 1 {
+			desc = info[1]
+		}
+		fmt.Fprintf(w, "        %q: {Type: %q, Description: %q},\n", ext, info[0], desc)
+	}
+	fmt.Fprintln(w, "    },")
+
+	// Write MagicNumbers - convert Perl regex to Go-friendly format
+	fmt.Fprintln(w, "    MagicNumbers: map[string]string{")
+	for fileType, pattern := range data.MagicNumbers {
+		// Keep the original pattern for now - will need conversion logic
+		fmt.Fprintf(w, "        %q: %q,\n", fileType, pattern)
+	}
+	fmt.Fprintln(w, "    },")
+
+	// Write TestOrder
+	fmt.Fprintln(w, "    TestOrder: []string{")
+	for _, fileType := range data.TestOrder {
+		fmt.Fprintf(w, "        %q,\n", fileType)
+	}
+	fmt.Fprintln(w, "    },")
+
+	// Write ModuleNames
+	fmt.Fprintln(w, "    ModuleNames: map[string]string{")
+	for fileType, module := range data.ModuleNames {
+		fmt.Fprintf(w, "        %q: %q,\n", fileType, module)
+	}
+	fmt.Fprintln(w, "    },")
+
+	fmt.Fprintln(w, "}")
+	fmt.Fprintln(w, "")
+	fmt.Fprintln(w, "type FileTypeInfo struct {")
+	fmt.Fprintln(w, "    Type        string")
+	fmt.Fprintln(w, "    Description string")
+	fmt.Fprintln(w, "}")
+
+	return w.Flush()
+}
+
+func main() {
+	if len(os.Args) < 2 {
+		fmt.Println("Usage: parse-exiftool <path-to-exiftool>")
+		os.Exit(1)
+	}
+
+	data, err := parseExifTool(os.Args[1])
+	if err != nil {
+		fmt.Printf("Error parsing ExifTool: %v\n", err)
+		os.Exit(1)
+	}
+
+	err = generateGoFile(data, "tags/exiftool-identify.go")
+	if err != nil {
+		fmt.Printf("Error generating Go file: %v\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Println("Generated tags/exiftool-identify.go")
+}

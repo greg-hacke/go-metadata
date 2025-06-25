@@ -5,6 +5,7 @@ package parser
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -31,6 +32,7 @@ func ParsePMFiles(rootDir string) (*ParsedData, error) {
 		MIMETypes: make(map[string]string),
 	}
 
+	// First pass: parse tag tables
 	err := filepath.WalkDir(rootDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -41,7 +43,7 @@ func ParsePMFiles(rootDir string) (*ParsedData, error) {
 			return nil
 		}
 
-		// Parse the PM file
+		// Parse the PM file for tags
 		if err := parsePMFile(path, data); err != nil {
 			// Log error but continue
 			fmt.Fprintf(os.Stderr, "Warning: error parsing %s: %v\n", path, err)
@@ -49,6 +51,36 @@ func ParsePMFiles(rootDir string) (*ParsedData, error) {
 
 		return nil
 	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	// Second pass: parse for file types
+	err = filepath.WalkDir(rootDir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		// Only process .pm files
+		if !strings.HasSuffix(path, ".pm") || d.IsDir() {
+			return nil
+		}
+
+		// Parse the PM file for file types
+		if err := parsePMFileForFileTypes(path, data); err != nil {
+			// Log error but continue
+			fmt.Fprintf(os.Stderr, "Warning: error parsing file types from %s: %v\n", path, err)
+		}
+
+		return nil
+	})
+
+	// Also look for the main ExifTool.pm file which contains the master file type list
+	exifToolPM := filepath.Join(rootDir, "..", "..", "ExifTool.pm")
+	if _, err := os.Stat(exifToolPM); err == nil {
+		parseMainExifToolPM(exifToolPM, data)
+	}
 
 	return data, err
 }
@@ -381,10 +413,270 @@ func parsePMFile(path string, data *ParsedData) error {
 		}
 	}
 
-	// Extract file type associations from the module
-	extractFileTypes(moduleName, data)
-
 	return scanner.Err()
+}
+
+// parsePMFileForFileTypes parses a PM file specifically for file type information
+func parsePMFileForFileTypes(path string, data *ParsedData) error {
+	file, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	// Read entire file content
+	content, err := io.ReadAll(file)
+	if err != nil {
+		return err
+	}
+
+	// Extract module name
+	baseName := filepath.Base(path)
+	moduleName := strings.TrimSuffix(baseName, ".pm")
+
+	// Look for file type definitions in various patterns
+
+	// Pattern 1: %fileTypeLookup or similar hashes
+	fileTypeLookupRe := regexp.MustCompile(`%(?:fileTypeLookup|fileType|supportedExtensions)\s*=\s*\([^)]+\)`)
+	if matches := fileTypeLookupRe.FindAllString(string(content), -1); len(matches) > 0 {
+		for _, match := range matches {
+			parseFileTypeLookup(match, moduleName, data)
+		}
+	}
+
+	// Pattern 2: File extensions in comments
+	// # Supported: NEF, NRW
+	commentExtRe := regexp.MustCompile(`#.*?(?:Supported|Extensions?|Files?).*?:\s*([\w\s,\.]+)`)
+	if matches := commentExtRe.FindAllStringSubmatch(string(content), -1); len(matches) > 0 {
+		for _, match := range matches {
+			if len(match) > 1 {
+				parseCommentExtensions(match[1], moduleName, data)
+			}
+		}
+	}
+
+	// Pattern 3: Extension checks in code
+	// $ext eq '.nef' or $file =~ /\.nef$/i
+	extCheckRe := regexp.MustCompile(`(?:\$ext\s*eq\s*['"](\.\w+)['"]|\$\w+\s*=~\s*/\\\.(\w+)\$/)`)
+	if matches := extCheckRe.FindAllStringSubmatch(string(content), -1); len(matches) > 0 {
+		for _, match := range matches {
+			ext := ""
+			if match[1] != "" {
+				ext = match[1]
+			} else if match[2] != "" {
+				ext = "." + match[2]
+			}
+			if ext != "" {
+				data.FileTypes[strings.ToLower(ext)] = moduleName
+			}
+		}
+	}
+
+	// Pattern 4: MIME type definitions
+	mimeTypeRe := regexp.MustCompile(`['"]?([\w/\+\-\.]+)['"]?\s*=>\s*['"]?(\w+)['"]?`)
+	if strings.Contains(string(content), "MIMEType") || strings.Contains(string(content), "mime") {
+		if matches := mimeTypeRe.FindAllStringSubmatch(string(content), -1); len(matches) > 0 {
+			for _, match := range matches {
+				if len(match) > 2 && strings.Contains(match[1], "/") {
+					// This looks like a MIME type
+					data.MIMETypes[match[1]] = moduleName
+				}
+			}
+		}
+	}
+
+	// Pattern 5: For specific known modules, add their extensions
+	// This handles cases where the PM file doesn't explicitly list extensions
+	addKnownModuleExtensions(moduleName, data)
+
+	return nil
+}
+
+// parseMainExifToolPM parses the main ExifTool.pm file for file type mappings
+func parseMainExifToolPM(path string, data *ParsedData) error {
+	file, err := os.Open(path)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	content, err := io.ReadAll(file)
+	if err != nil {
+		return err
+	}
+
+	// Look for %fileTypeLookup hash
+	// This is the master list of file extensions in ExifTool
+	fileTypeLookupRe := regexp.MustCompile(`%fileTypeLookup\s*=\s*\(([\s\S]*?)\);`)
+	matches := fileTypeLookupRe.FindSubmatch(content)
+	if len(matches) > 1 {
+		lookupContent := string(matches[1])
+
+		// Parse entries like: NEF => ['NEF', 'Nikon Electronic Format'],
+		entryRe := regexp.MustCompile(`(\w+)\s*=>\s*\[['"](\w+)['"](?:,\s*['"][^'"]*['"])?\]`)
+		entries := entryRe.FindAllStringSubmatch(lookupContent, -1)
+
+		for _, entry := range entries {
+			if len(entry) > 2 {
+				ext := "." + strings.ToLower(entry[1])
+				moduleName := entry[2]
+				data.FileTypes[ext] = moduleName
+			}
+		}
+	}
+
+	// Also look for %mimeType hash
+	mimeTypeHashRe := regexp.MustCompile(`%mimeType\s*=\s*\(([\s\S]*?)\);`)
+	matches = mimeTypeHashRe.FindSubmatch(content)
+	if len(matches) > 1 {
+		mimeContent := string(matches[1])
+
+		// Parse entries like: 'image/jpeg' => 'JPEG',
+		mimeEntryRe := regexp.MustCompile(`['"]([^'"]+)['"]\s*=>\s*['"](\w+)['"]`)
+		entries := mimeEntryRe.FindAllStringSubmatch(mimeContent, -1)
+
+		for _, entry := range entries {
+			if len(entry) > 2 {
+				data.MIMETypes[entry[1]] = entry[2]
+			}
+		}
+	}
+
+	return nil
+}
+
+// parseFileTypeLookup parses a fileTypeLookup hash
+func parseFileTypeLookup(hashContent string, moduleName string, data *ParsedData) {
+	// Parse entries like: 'NEF' => ['NEF', 'Nikon Electronic Format'],
+	entryRe := regexp.MustCompile(`['"](\w+)['"]\s*=>\s*\[['"](\w+)['"]`)
+	matches := entryRe.FindAllStringSubmatch(hashContent, -1)
+	for _, match := range matches {
+		if len(match) > 1 {
+			ext := "." + strings.ToLower(match[1])
+			// Map to the current module or the specified type
+			targetModule := moduleName
+			if len(match) > 2 && match[2] != "" {
+				// Sometimes the second field indicates the module
+				targetModule = match[2]
+			}
+			data.FileTypes[ext] = targetModule
+		}
+	}
+}
+
+// parseCommentExtensions parses extensions from comments
+func parseCommentExtensions(extList string, moduleName string, data *ParsedData) {
+	// Split by common delimiters
+	exts := regexp.MustCompile(`[,\s]+`).Split(extList, -1)
+	for _, ext := range exts {
+		ext = strings.TrimSpace(ext)
+		if ext == "" {
+			continue
+		}
+		// Add dot if missing
+		if !strings.HasPrefix(ext, ".") {
+			ext = "." + ext
+		}
+		data.FileTypes[strings.ToLower(ext)] = moduleName
+	}
+}
+
+// addKnownModuleExtensions adds extensions for known modules
+// This is a bridge until we can extract all extensions from PM files
+func addKnownModuleExtensions(moduleName string, data *ParsedData) {
+	// Map of module names to their known extensions
+	// This is based on ExifTool documentation and common usage
+	knownExtensions := map[string][]string{
+		"Nikon":       {".nef", ".nrw"},
+		"Canon":       {".crw", ".cr2", ".cr3", ".crm"},
+		"Sony":        {".arw", ".sr2", ".srf"},
+		"Olympus":     {".orf"},
+		"Panasonic":   {".rw2"},
+		"Pentax":      {".pef", ".dng"},
+		"FujiFilm":    {".raf"},
+		"Minolta":     {".mrw"},
+		"Sigma":       {".x3f"},
+		"FLAC":        {".flac"},
+		"DNG":         {".dng"},
+		"HEIF":        {".heif", ".heic"},
+		"WebP":        {".webp"},
+		"AVIF":        {".avif"},
+		"Opus":        {".opus"},
+		"Vorbis":      {".ogg", ".oga"},
+		"Theora":      {".ogv"},
+		"Matroska":    {".mkv", ".mka", ".mks", ".webm"},
+		"ASF":         {".asf", ".wmv", ".wma"},
+		"Real":        {".rm", ".rmvb", ".ra"},
+		"MPEG":        {".mpg", ".mpeg", ".m1v", ".m2v"},
+		"M2TS":        {".m2ts", ".mts", ".m2t", ".ts"},
+		"DV":          {".dv"},
+		"SWF":         {".swf"},
+		"FLV":         {".flv", ".f4v"},
+		"OGG":         {".ogg", ".ogv", ".oga", ".ogx", ".spx"},
+		"MXF":         {".mxf"},
+		"GIF":         {".gif"},
+		"BMP":         {".bmp", ".dib"},
+		"TIFF":        {".tif", ".tiff"},
+		"PSD":         {".psd", ".psb"},
+		"EPS":         {".eps", ".epsf", ".ps"},
+		"XMP":         {".xmp"},
+		"ICC_Profile": {".icc", ".icm"},
+		"VCard":       {".vcf"},
+		"HTML":        {".html", ".htm", ".xhtml"},
+		"XML":         {".xml"},
+		"JSON":        {".json"},
+		"ZIP":         {".zip"},
+		"RAR":         {".rar"},
+		"GZIP":        {".gz", ".gzip"},
+		"BZIP2":       {".bz2"},
+		"TAR":         {".tar"},
+		"LNK":         {".lnk"},
+		"Font":        {".ttf", ".otf", ".ttc"},
+		"FITS":        {".fits", ".fit", ".fts"},
+		"MIFF":        {".miff", ".mif"},
+		"PCX":         {".pcx"},
+		"PICT":        {".pict", ".pct"},
+		"WPG":         {".wpg"},
+		"XBM":         {".xbm"},
+		"XPM":         {".xpm"},
+		"OpenEXR":     {".exr"},
+		"DPX":         {".dpx"},
+		"JPEG2000":    {".jp2", ".jpf", ".jpx", ".j2k", ".jpc"},
+		"DJVU":        {".djvu", ".djv"},
+		"AIFF":        {".aiff", ".aif", ".aifc"},
+		"APE":         {".ape"},
+		"MOI":         {".moi"},
+		"ITC":         {".itc"},
+		"ISO":         {".iso"},
+		"EXE":         {".exe", ".dll"},
+		"CHM":         {".chm"},
+		"LIF":         {".lif"},
+		"PDB":         {".pdb", ".prc"},
+		"Torrent":     {".torrent"},
+	}
+
+	if exts, ok := knownExtensions[moduleName]; ok {
+		for _, ext := range exts {
+			data.FileTypes[ext] = moduleName
+		}
+	}
+
+	// Also check for common MIME types
+	knownMIMETypes := map[string]map[string]string{
+		"Nikon":    {"image/x-nikon-nef": "NEF"},
+		"Canon":    {"image/x-canon-cr2": "CR2", "image/x-canon-crw": "CRW"},
+		"FLAC":     {"audio/flac": "FLAC", "audio/x-flac": "FLAC"},
+		"WebP":     {"image/webp": "WebP"},
+		"HEIF":     {"image/heif": "HEIF", "image/heic": "HEIC"},
+		"Opus":     {"audio/opus": "Opus"},
+		"Matroska": {"video/x-matroska": "MKV", "video/webm": "WebM"},
+	}
+
+	if mimes, ok := knownMIMETypes[moduleName]; ok {
+		for mime, _ := range mimes {
+			data.MIMETypes[mime] = moduleName
+		}
+	}
 }
 
 // extractTagKey extracts the tag key from regex matches
@@ -452,45 +744,6 @@ func parseValueMappings(content string, tag *TagDef) {
 		if len(match) >= 3 {
 			tag.Values[match[1]] = match[2]
 		}
-	}
-}
-
-// extractFileTypes extracts file type associations based on module name
-func extractFileTypes(moduleName string, data *ParsedData) {
-	// Common mappings based on module names
-	switch moduleName {
-	case "JPEG":
-		data.FileTypes[".jpg"] = moduleName
-		data.FileTypes[".jpeg"] = moduleName
-		data.FileTypes[".jpe"] = moduleName
-		data.MIMETypes["image/jpeg"] = moduleName
-	case "PNG":
-		data.FileTypes[".png"] = moduleName
-		data.MIMETypes["image/png"] = moduleName
-	case "TIFF":
-		data.FileTypes[".tif"] = moduleName
-		data.FileTypes[".tiff"] = moduleName
-		data.MIMETypes["image/tiff"] = moduleName
-	case "GIF":
-		data.FileTypes[".gif"] = moduleName
-		data.MIMETypes["image/gif"] = moduleName
-	case "BMP":
-		data.FileTypes[".bmp"] = moduleName
-		data.MIMETypes["image/bmp"] = moduleName
-	case "PDF":
-		data.FileTypes[".pdf"] = moduleName
-		data.MIMETypes["application/pdf"] = moduleName
-	case "MP3", "ID3":
-		data.FileTypes[".mp3"] = moduleName
-		data.MIMETypes["audio/mpeg"] = moduleName
-	case "MP4", "MOV", "QuickTime":
-		data.FileTypes[".mp4"] = moduleName
-		data.FileTypes[".m4v"] = moduleName
-		data.FileTypes[".m4a"] = moduleName
-		data.FileTypes[".mov"] = moduleName
-		data.MIMETypes["video/mp4"] = moduleName
-		data.MIMETypes["video/quicktime"] = moduleName
-		// Add more as needed
 	}
 }
 
