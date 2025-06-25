@@ -1,0 +1,289 @@
+=== File System Information ===
+File Name:     Strategy_Signal.pdf
+File Path:     /Users/greghacke/Downloads/Strategy_Signal.pdf
+File Size:     5444523 bytes
+Permissions:   -rw-r--r--
+Modified Time: 2025-05-30T11:51:24-04:00
+Is Directory:  false
+Extension:     .pdf
+
+=== Processing Metadata ===
+Header bytes: 255044462d312e340d25e2e3cfd30d0a
+Extension fallback: PDF
+Format:        PDF
+Module:        PDF
+Description:   Adobe Portable Document Format
+Found 1400 total tag tables available
+Tag Tables:    1400 found
+
+=== Extracting Metadata ===
+
+=== Metadata Capture Analysis ===
+File Type: PDF (Module: PDF)
+Total Available Tag Tables: 1400
+Storage Type: Container-level metadata
+
+Available Tables by Module:
+  PDF: 32 tables
+  XMP: 36 tables
+Total relevant module types: 2
+
+Next Steps:
+  1. Parse container structure (PDF objects, ZIP entries, etc.)
+  2. Extract metadata from appropriate locations
+  3. Use format-specific tables to decode
+
+=== Metadata (JSON) ===
+{}
+
+=== Processing Complete ===
+=== File System Information ===
+File Name:     aerial-view-of-cityscape.jpg
+File Path:     /Users/greghacke/Pictures/aerial-view-of-cityscape.jpg
+File Size:     11191540 bytes
+Permissions:   -rw-r--r--
+Modified Time: 2024-03-27T21:27:11-04:00
+Is Directory:  false
+Extension:     .jpg
+
+=== Processing Metadata ===
+Header bytes: ffd8ffe000104a46494600010201012c
+Magic match: JPEG (pattern: \xff\xd8\xff)
+Using extension for specific format: JPG
+Format:        JPEG
+Module:        JPEG
+Description:   Joint Photographic Experts Group
+Found 1400 total tag tables available
+Tag Tables:    1400 found
+
+=== Extracting Metadata ===
+
+=== Metadata Capture Analysis ===
+File Type: JPEG (Module: JPEG)
+Total Available Tag Tables: 1400
+Storage Type: Embedded tag-based metadata
+
+Available Tables by Module:
+  Photoshop: 14 tables
+  Exif: 13 tables
+  JPEG: 12 tables
+  ExifTool: 20 tables
+  GPS: 2 tables
+  IPTC: 10 tables
+  ICC_Profile: 9 tables
+  XMP: 36 tables
+Total relevant module types: 8
+
+Next Steps:
+  1. Parse JPEG/PNG segments to find APP markers
+  2. Identify which metadata types are present (EXIF, IPTC, XMP)
+  3. Use appropriate tables to decode each type
+
+=== Metadata (JSON) ===
+{}
+
+=== Processing Complete ===
+=== File System Information ===
+File Name:     RAW_NIKON_D3X.NEF
+File Path:     /Users/Shared/haystak/Images/RAW_NIKON_D3X.NEF
+File Size:     28592354 bytes
+Permissions:   -rw-r--r--
+Modified Time: 2021-01-31T16:26:12-05:00
+Is Directory:  false
+Extension:     .NEF
+
+=== Processing Metadata ===
+Header bytes: 4d4d002a00000008001b00fe00040000
+Extension fallback: NEF
+Format:        TIFF
+Module:        TIFF
+Description:   Nikon (RAW) Electronic Format
+Found 1400 total tag tables available
+Tag Tables:    1400 found
+
+=== Extracting Metadata ===
+
+=== Metadata Capture Analysis ===
+File Type: TIFF (Module: TIFF)
+Total Available Tag Tables: 1400
+Storage Type: Hybrid (container + embedded)
+
+Available Tables by Module:
+  Photoshop: 14 tables
+  Exif: 13 tables
+  ExifTool: 20 tables
+  ICC_Profile: 9 tables
+  XMP: 36 tables
+  IPTC: 10 tables
+  GPS: 2 tables
+Total relevant module types: 7
+
+Next Steps:
+  1. Parse both container structure and embedded metadata
+  2. Handle IFD chains for TIFF-based formats
+  3. Extract from multiple metadata locations
+
+=== Metadata (JSON) ===
+{}
+
+=== Processing Complete ===
+=== File System Information ===
+File Name:     RAW_OLYMPUS_E3.ORF
+File Path:     /Users/greghacke/Pictures/OPIe/second/newfolder/RAW_OLYMPUS_E3.ORF
+File Size:     10162230 bytes
+Permissions:   -rw-r--r--
+Modified Time: 2021-01-31T15:55:06-05:00
+Is Directory:  false
+Extension:     .ORF
+
+=== Processing Metadata ===
+Header bytes: 4949524f080000001500000104000100
+Extension fallback: ORF
+Format:        ORF
+Module:        Olympus
+Description:   Olympus RAW format
+Found 1400 total tag tables available
+Tag Tables:    1400 found
+
+=== Extracting Metadata ===
+
+=== Metadata Capture Analysis ===
+File Type: ORF (Module: Olympus)
+Total Available Tag Tables: 1400
+Storage Type: Embedded tag-based metadata
+
+Available Tables by Module:
+  GPS: 2 tables
+  XMP: 36 tables
+  ICC_Profile: 9 tables
+  Exif: 13 tables
+  Photoshop: 14 tables
+  ExifTool: 20 tables
+  IPTC: 10 tables
+Total relevant module types: 7
+
+Next Steps:
+  1. Parse JPEG/PNG segments to find APP markers
+  2. Identify which metadata types are present (EXIF, IPTC, XMP)
+  3. Use appropriate tables to decode each type
+
+=== Metadata (JSON) ===
+{}
+
+=== Processing Complete ===
+=== File System Information ===
+File Name:     11_Kaval_Sviri.flac
+File Path:     /Users/greghacke/Downloads/Zamanora/11_Kaval_Sviri.flac
+File Size:     22460169 bytes
+Permissions:   -rw-rw-rw-
+Modified Time: 2025-06-21T04:29:49-04:00
+Is Directory:  false
+Extension:     .flac
+
+=== Processing Metadata ===
+Header bytes: 664c6143000000221200120000001100
+Extension fallback: FLAC
+Format:        FLAC
+Module:        FLAC
+Description:   Free Lossless Audio Codec
+Found 1400 total tag tables available
+Tag Tables:    1400 found
+
+=== Extracting Metadata ===
+
+=== Metadata Capture Analysis ===
+File Type: FLAC (Module: FLAC)
+Total Available Tag Tables: 1400
+Storage Type: Container-level metadata
+
+Available Tables by Module:
+  FLAC: 4 tables
+Total relevant module types: 1
+
+Next Steps:
+  1. Parse container structure (PDF objects, ZIP entries, etc.)
+  2. Extract metadata from appropriate locations
+  3. Use format-specific tables to decode
+
+=== Metadata (JSON) ===
+{}
+
+=== Processing Complete ===
+=== File System Information ===
+File Name:     tennessee-flag-hexagon-transition-1080p-resolution.mp4
+File Path:     /Users/greghacke/Documents/MET/_Sites/owbnknoxville.net/images/tennessee-flag-hexagon-transition-1080p-resolution.mp4
+File Size:     2526282 bytes
+Permissions:   -rw-------
+Modified Time: 2022-07-14T01:33:47-04:00
+Is Directory:  false
+Extension:     .mp4
+
+=== Processing Metadata ===
+Header bytes: 000000206674797069736f6d00000200
+Extension fallback: MP4
+Format:        MOV
+Module:        QuickTime
+Description:   MPEG-4 video
+Found 1400 total tag tables available
+Tag Tables:    1400 found
+
+=== Extracting Metadata ===
+
+=== Metadata Capture Analysis ===
+File Type: MOV (Module: QuickTime)
+Total Available Tag Tables: 1400
+Storage Type: Container-level metadata
+
+Available Tables by Module:
+  XMP: 36 tables
+  QuickTime: 90 tables
+Total relevant module types: 2
+
+Next Steps:
+  1. Parse container structure (PDF objects, ZIP entries, etc.)
+  2. Extract metadata from appropriate locations
+  3. Use format-specific tables to decode
+
+=== Metadata (JSON) ===
+{}
+
+=== Processing Complete ===
+=== File System Information ===
+File Name:     Unified_Werewolf_House_Rules_Master_Doc.docx
+File Path:     /Users/greghacke/Documents/WordDocs/Unified_Werewolf_House_Rules_Master_Doc.docx
+File Size:     383317 bytes
+Permissions:   -rw-r--r--
+Modified Time: 2025-04-09T15:45:14-04:00
+Is Directory:  false
+Extension:     .docx
+
+=== Processing Metadata ===
+Header bytes: 504b0304140002000800ba7d895a68e7
+Magic match: ZIP (pattern: PK\x03\x04)
+Using extension for specific format: DOCX
+Format:        ZIP
+Module:        OOXML
+Description:   FPX
+Found 1400 total tag tables available
+Tag Tables:    1400 found
+
+=== Extracting Metadata ===
+
+=== Metadata Capture Analysis ===
+File Type: ZIP (Module: OOXML)
+Total Available Tag Tables: 1400
+Storage Type: Container-level metadata
+
+Available Tables by Module:
+  ZIP: 4 tables
+Total relevant module types: 1
+
+Next Steps:
+  1. Parse container structure (PDF objects, ZIP entries, etc.)
+  2. Extract metadata from appropriate locations
+  3. Use format-specific tables to decode
+
+=== Metadata (JSON) ===
+{}
+
+=== Processing Complete ===
