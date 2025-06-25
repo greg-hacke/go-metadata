@@ -5,13 +5,13 @@ EXIFTOOL_PM_DIR ?= /opt/homebrew/Cellar/exiftool/13.25/libexec/lib/perl5/Image/E
 
 build:
 	go build -o bin/gen-tags ./cmd/gen-tags
-	go build -o bin/meta-test ./cmd/meta-test
+	go build -o bin/meta-extract ./cmd/meta-extract
 
 gen-tags: build
 	./bin/gen-tags -o tags $(EXIFTOOL_PM_DIR)
 
 test: build
-	./bin/meta-test testdata/example.jpg
+	./bin/meta-extract testdata/example.jpg
 
 clean:
 	rm -rf bin/
@@ -19,4 +19,4 @@ clean:
 
 install:
 	go install ./cmd/gen-tags
-	go install ./cmd/meta-test
+	go install ./cmd/meta-extract
