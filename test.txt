@@ -1,43 +1,4 @@
 === File System Information ===
-File Name:     Strategy_Signal.pdf
-File Path:     /Users/greghacke/Downloads/Strategy_Signal.pdf
-File Size:     5444523 bytes
-Permissions:   -rw-r--r--
-Modified Time: 2025-05-30T11:51:24-04:00
-Is Directory:  false
-Extension:     .pdf
-
-=== Processing Metadata ===
-Header bytes: 255044462d312e340d25e2e3cfd30d0a
-Extension fallback: PDF
-Format:        PDF
-Module:        PDF
-Description:   Adobe Portable Document Format
-Found 1400 total tag tables available
-Tag Tables:    1400 found
-
-=== Extracting Metadata ===
-
-=== Metadata Capture Analysis ===
-File Type: PDF (Module: PDF)
-Total Available Tag Tables: 1400
-Storage Type: Container-level metadata
-
-Available Tables by Module:
-  PDF: 32 tables
-  XMP: 36 tables
-Total relevant module types: 2
-
-Next Steps:
-  1. Parse container structure (PDF objects, ZIP entries, etc.)
-  2. Extract metadata from appropriate locations
-  3. Use format-specific tables to decode
-
-=== Metadata (JSON) ===
-{}
-
-=== Processing Complete ===
-=== File System Information ===
 File Name:     aerial-view-of-cityscape.jpg
 File Path:     /Users/greghacke/Pictures/aerial-view-of-cityscape.jpg
 File Size:     11191540 bytes
@@ -48,242 +9,566 @@ Extension:     .jpg
 
 === Processing Metadata ===
 Header bytes: ffd8ffe000104a46494600010201012c
-Magic match: JPEG (pattern: \xff\xd8\xff)
-Using extension for specific format: JPG
+Extension fallback: JPG
 Format:        JPEG
 Module:        JPEG
 Description:   Joint Photographic Experts Group
-Found 1400 total tag tables available
-Tag Tables:    1400 found
+Extension:     JPG
+
+=== Dynamic Tag Table Loading for JPEG ===
+Step 1: Loading base tables...
+  Loaded: JPEG::GraphConv
+  Loaded: JPEG::NITF
+  Loaded: JPEG::Adobe
+  Loaded: JPEG::HDR
+  Loaded: JPEG::Main
+  Loaded: JPEG::AVI1
+  Loaded: JPEG::JPS
+  Loaded: JPEG::MediaJukebox
+  Loaded: JPEG::Ocad
+  Loaded: JPEG::AdobeCM
+  Loaded: JPEG::EPPIM
+  Loaded: JPEG::SPIFF
+Base tables loaded: 12
+
+Step 2: Following SubIFD references...
+  Following SubIFD: Image::ExifTool::DJI::ThermalParams3 -> DJI::ThermalParams3
+  Following SubIFD: Image::ExifTool::InfiRay::Picture -> InfiRay::Picture
+  Following SubIFD: Image::ExifTool::FLIR::FFF -> FLIR::FFF
+  Following SubIFD: Image::ExifTool::InfiRay::Version -> InfiRay::Version
+  Following SubIFD: Image::ExifTool::Trailer::Google -> Trailer::Google
+  Following SubIFD: Image::ExifTool::FLIR::Header -> FLIR::Header
+  Following SubIFD: Image::ExifTool::FLIR::PaletteInfo -> FLIR::PaletteInfo
+  Following SubIFD: Image::ExifTool::FLIR::CoarseData -> FLIR::CoarseData
+  Following SubIFD: Image::ExifTool::FLIR::CameraInfo -> FLIR::CameraInfo
+  Following SubIFD: Image::ExifTool::FLIR::RawData -> FLIR::RawData
+  Following SubIFD: Image::ExifTool::FLIR::EmbeddedImage -> FLIR::EmbeddedImage
+  Following SubIFD: Image::ExifTool::FLIR::PaintData -> FLIR::PaintData
+  Following SubIFD: Image::ExifTool::FLIR::TextInfo -> FLIR::TextInfo
+  Following SubIFD: Image::ExifTool::FLIR::MeasInfo -> FLIR::MeasInfo
+  Following SubIFD: Image::ExifTool::FLIR::ParamInfo -> FLIR::ParamInfo
+  Following SubIFD: Image::ExifTool::FLIR::GainDeadData -> FLIR::GainDeadData
+Additional tables loaded via SubIFD: 16
+
+Total pre-loaded tables: 28
+Note: Additional tables will be loaded dynamically during parsing
+Tag Tables:    28 found
 
 === Extracting Metadata ===
 
-=== Metadata Capture Analysis ===
-File Type: JPEG (Module: JPEG)
-Total Available Tag Tables: 1400
-Storage Type: Embedded tag-based metadata
+=== Dynamic Metadata Extraction ===
+Scanning 11191540 bytes for metadata patterns...
+  Found TIFF/EXIF header at offset 30
 
-Available Tables by Module:
-  Photoshop: 14 tables
-  Exif: 13 tables
-  JPEG: 12 tables
-  ExifTool: 20 tables
-  GPS: 2 tables
-  IPTC: 10 tables
-  ICC_Profile: 9 tables
-  XMP: 36 tables
-Total relevant module types: 8
+=== Looking for Basic EXIF Tags in ALL tables ===
+  WARNING: Basic EXIF tag 0x010E (ImageDescription) not found in ANY table!
+  This suggests the tag tables were not generated correctly.
 
-Next Steps:
-  1. Parse JPEG/PNG segments to find APP markers
-  2. Identify which metadata types are present (EXIF, IPTC, XMP)
-  3. Use appropriate tables to decode each type
+  Checking ExifTool::Main for basic tags:
+    Sample tag: 3 -> XResolution
+    Sample tag: 5 -> YResolution
+    Sample tag: 9 -> ThumbnailTIFF
+    Sample tag: 7 -> ThumbnailWidth
+    Sample tag: 8 -> ThumbnailHeight
+
+  Checking Exif::Main for basic tags:
+    Sample tag: 0x194 -> 
+    Sample tag: 0x5030 -> 
+    Sample tag: 0x84EB -> 
+    Sample tag: 0x84F0 -> 
+    Sample tag: 0x111 -> 
+    Dynamically loading EXIF tables...
+    Loaded 168 EXIF tables
+      - Reconyx::Main (module: Reconyx, 19 tags)
+      - PCAP::Main (module: PCAP, 13 tags)
+      - NikonSettings::Main (module: NikonSettings, 124 tags)
+      ... and 165 more
+
+=== Debug: Tag Tables Content ===
+
+Searching for tag 0x010E (ImageDescription):
+
+Searching for tag 0x0112 (Orientation):
+  FOUND in loaded table (module: Minolta) as hex key
+    Name: WhiteBalanceFineTune
+  FOUND in loaded table (module: PhaseOne) as hex key
+    Name: DateTimeOriginal
+  FOUND in loaded table (module: Sony) as hex key
+    Name: WhiteBalanceFineTune
+
+Searching for tag 0x011A (XResolution):
+
+Searching for tag 0x011B (YResolution):
+  EXISTS in tags.AllTags["Sony::MoreInfo0201"] (module: Sony) but NOT LOADED
+    Tag Name: ImageCount
+
+Searching for tag 0x0128 (ResolutionUnit):
+  EXISTS in tags.AllTags["FLIR::MeterLink"] (module: FLIR) as decimal but NOT LOADED
+    Tag Name: Reading3Value
+
+Searching for tag 0x013B (Artist):
+
+=== Loaded Modules ===
+  EXIF
+  JPEG
+  FLIR
+  TRAILER
+  DJI
+  INFIRAY
+
+=== Loaded Tables (196 total) ===
+  Table[0]: Module=JPEG, Tags=8
+  Table[1]: Module=JPEG, Tags=1
+  Table[2]: Module=FLIR, Tags=7
+  Table[3]: Module=FLIR, Tags=3
+  Table[4]: Module=FLIR, Tags=9
+  Table[5]: Module=FLIR, Tags=9
+  Table[6]: Module=FLIR, Tags=5
+  Table[7]: Module=JPEG, Tags=6
+  Table[8]: Module=JPEG, Tags=7
+  Table[9]: Module=JPEG, Tags=5
+  Table[33]: Module=ExifTool, Tags=4
+  Table[34]: Module=Exif, Tags=8
+  Table[36]: Module=Exif, Tags=0
+  Table[42]: Module=ExifTool, Tags=36
+  Table[44]: Module=Exif, Tags=53
+  Table[46]: Module=ExifTool, Tags=8
+  Table[51]: Module=ExifTool, Tags=4
+  Table[61]: Module=Exif, Tags=17
+  Table[62]: Module=ExifTool, Tags=0
+  Table[64]: Module=ExifTool, Tags=2
+  Table[73]: Module=ExifTool, Tags=19
+  Table[75]: Module=Exif, Tags=15
+  Table[80]: Module=Exif, Tags=425
+  Table[83]: Module=ExifTool, Tags=4
+  Table[87]: Module=Exif, Tags=1
+  Table[91]: Module=ExifTool, Tags=18
+  Table[92]: Module=Exif, Tags=5
+  Table[99]: Module=ExifTool, Tags=122
+  Table[100]: Module=ExifTool, Tags=1
+  Table[103]: Module=ExifTool, Tags=6
+  Table[112]: Module=Exif, Tags=10
+  Table[120]: Module=Exif, Tags=29
+  Table[123]: Module=ExifTool, Tags=2
+  Table[125]: Module=Exif, Tags=20
+  Table[135]: Module=ExifTool, Tags=73
+  Table[136]: Module=ExifTool, Tags=3
+  Table[140]: Module=Exif, Tags=22
+  Table[142]: Module=ExifTool, Tags=225
+  Table[156]: Module=ExifTool, Tags=8
+  Table[158]: Module=ExifTool, Tags=5
+  Table[169]: Module=ExifTool, Tags=352
+  Table[173]: Module=Exif, Tags=28
+  Table[177]: Module=ExifTool, Tags=22
+  ... and 186 more tables
+    Big-endian byte order
+    First IFD at offset: 8
+    IFD0: 8 entries at offset 8
+      Tag 0x010E: type=2 count=111 offset=110 -> UNKNOWN
+      Tag 0x0112: type=3 count=1 offset=65536 -> WhiteBalanceFineTune = 1
+      Tag 0x011A: type=5 count=1 offset=222 -> UNKNOWN
+      Tag 0x011B: type=5 count=1 offset=230 -> UNKNOWN
+      Tag 0x0128: type=3 count=1 offset=131072 -> UNKNOWN
+      Tag 0x013B: type=2 count=12 offset=238 -> UNKNOWN
+      Tag 0x0213: type=3 count=1 offset=65536 -> WB_RGGBLevelsFluorescentW = 1
+      Tag 0x8769: type=4 count=1 offset=250 -> ExifIFD = 250
+    Processed 3 tags, skipped 5 unknown tags
+  Detected JPEG structure
+    APP1/EXIF segment
+
+=== Looking for Basic EXIF Tags in ALL tables ===
+  WARNING: Basic EXIF tag 0x010E (ImageDescription) not found in ANY table!
+  This suggests the tag tables were not generated correctly.
+
+  Checking ExifTool::Main for basic tags:
+    Sample tag: 5 -> YResolution
+    Sample tag: 9 -> ThumbnailTIFF
+    Sample tag: 7 -> ThumbnailWidth
+    Sample tag: 8 -> ThumbnailHeight
+    Sample tag: DATAMEMBER -> 
+
+  Checking Exif::Main for basic tags:
+    Sample tag: 0x200 -> JPEGProc
+    Sample tag: 0x8480 -> IntergraphMatrix
+    Sample tag: 0x84E3 -> RasterPadding
+    Sample tag: 0xC61D -> WhiteLevel
+    Sample tag: 0x1001 -> RelatedImageWidth
+
+=== Debug: Tag Tables Content ===
+
+Searching for tag 0x010E (ImageDescription):
+
+Searching for tag 0x0112 (Orientation):
+  FOUND in loaded table (module: Minolta) as hex key
+    Name: WhiteBalanceFineTune
+  FOUND in loaded table (module: PhaseOne) as hex key
+    Name: DateTimeOriginal
+  FOUND in loaded table (module: Sony) as hex key
+    Name: WhiteBalanceFineTune
+
+Searching for tag 0x011A (XResolution):
+
+Searching for tag 0x011B (YResolution):
+  EXISTS in tags.AllTags["Sony::MoreInfo0201"] (module: Sony) but NOT LOADED
+    Tag Name: ImageCount
+
+Searching for tag 0x0128 (ResolutionUnit):
+  EXISTS in tags.AllTags["FLIR::MeterLink"] (module: FLIR) as decimal but NOT LOADED
+    Tag Name: Reading3Value
+
+Searching for tag 0x013B (Artist):
+
+=== Loaded Modules ===
+  DJI
+  INFIRAY
+  EXIF
+  JPEG
+  FLIR
+  TRAILER
+
+=== Loaded Tables (196 total) ===
+  Table[0]: Module=JPEG, Tags=8
+  Table[1]: Module=JPEG, Tags=1
+  Table[2]: Module=FLIR, Tags=7
+  Table[3]: Module=FLIR, Tags=3
+  Table[4]: Module=FLIR, Tags=9
+  Table[5]: Module=FLIR, Tags=9
+  Table[6]: Module=FLIR, Tags=5
+  Table[7]: Module=JPEG, Tags=6
+  Table[8]: Module=JPEG, Tags=7
+  Table[9]: Module=JPEG, Tags=5
+  Table[33]: Module=ExifTool, Tags=4
+  Table[34]: Module=Exif, Tags=8
+  Table[36]: Module=Exif, Tags=0
+  Table[42]: Module=ExifTool, Tags=36
+  Table[44]: Module=Exif, Tags=53
+  Table[46]: Module=ExifTool, Tags=8
+  Table[51]: Module=ExifTool, Tags=4
+  Table[61]: Module=Exif, Tags=17
+  Table[62]: Module=ExifTool, Tags=0
+  Table[64]: Module=ExifTool, Tags=2
+  Table[73]: Module=ExifTool, Tags=19
+  Table[75]: Module=Exif, Tags=15
+  Table[80]: Module=Exif, Tags=425
+  Table[83]: Module=ExifTool, Tags=4
+  Table[87]: Module=Exif, Tags=1
+  Table[91]: Module=ExifTool, Tags=18
+  Table[92]: Module=Exif, Tags=5
+  Table[99]: Module=ExifTool, Tags=122
+  Table[100]: Module=ExifTool, Tags=1
+  Table[103]: Module=ExifTool, Tags=6
+  Table[112]: Module=Exif, Tags=10
+  Table[120]: Module=Exif, Tags=29
+  Table[123]: Module=ExifTool, Tags=2
+  Table[125]: Module=Exif, Tags=20
+  Table[135]: Module=ExifTool, Tags=73
+  Table[136]: Module=ExifTool, Tags=3
+  Table[140]: Module=Exif, Tags=22
+  Table[142]: Module=ExifTool, Tags=225
+  Table[156]: Module=ExifTool, Tags=8
+  Table[158]: Module=ExifTool, Tags=5
+  Table[169]: Module=ExifTool, Tags=352
+  Table[173]: Module=Exif, Tags=28
+  Table[177]: Module=ExifTool, Tags=22
+  ... and 186 more tables
+    Big-endian byte order
+    First IFD at offset: 8
+    IFD0: 8 entries at offset 8
+      Tag 0x010E: type=2 count=111 offset=110 -> UNKNOWN
+      Tag 0x0112: type=3 count=1 offset=65536 -> WhiteBalanceFineTune = 1
+      Tag 0x011A: type=5 count=1 offset=222 -> UNKNOWN
+      Tag 0x011B: type=5 count=1 offset=230 -> UNKNOWN
+      Tag 0x0128: type=3 count=1 offset=131072 -> UNKNOWN
+      Tag 0x013B: type=2 count=12 offset=238 -> UNKNOWN
+      Tag 0x0213: type=3 count=1 offset=65536 -> WB_RGGBLevelsFluorescentW = 1
+      Tag 0x8769: type=4 count=1 offset=250 -> ExifIFD = 250
+    Processed 3 tags, skipped 5 unknown tags
+    APP13/Photoshop segment
+    Dynamically loading Photoshop tables...
+    Loaded 16 Photoshop tables
+      - Photoshop::PixelInfo (module: Photoshop, 0 tags)
+      - Photoshop::printFlags (module: Photoshop, 9 tags)
+      - Photoshop::Resolution (module: Photoshop, 5 tags)
+      ... and 13 more
+    Extracting IPTC data from offset 364
+      IPTC 1:90 (record=1, dataset=90, len=6) -> UNKNOWN
+      IPTC 1:0 (record=1, dataset=0, len=2) -> UNKNOWN
+      IPTC 2:5 (record=2, dataset=5, len=5) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=11) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=7) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=9) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=3) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=11) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=8) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=4) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=6) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=8) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=5) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=5) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=6) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=9) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=1) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=6) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=6) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=10) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=11) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=18) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=12) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=6) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=4) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=11) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=20) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=10) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=10) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=12) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=11) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=11) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=15) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=13) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=4) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=15) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=10) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=3) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=5) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=9) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=8) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=8) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=7) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=11) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=9) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=12) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=14) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=18) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=6) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=17) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=19) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=22) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=18) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=12) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=14) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=9) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=11) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=17) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=16) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=16) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=12) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=11) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=10) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=11) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=12) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=13) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=0) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=16) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=20) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=0) -> UNKNOWN
+      IPTC 2:25 (record=2, dataset=25, len=0) -> UNKNOWN
+      IPTC 2:40 (record=2, dataset=40, len=35) -> UNKNOWN
+      IPTC 2:55 (record=2, dataset=55, len=8) -> UNKNOWN
+      IPTC 2:80 (record=2, dataset=80, len=11) -> UNKNOWN
+      IPTC 2:105 (record=2, dataset=105, len=138) -> UNKNOWN
+      IPTC 2:110 (record=2, dataset=110, len=12) -> UNKNOWN
+      IPTC 2:120 (record=2, dataset=120, len=110) -> UNKNOWN
+      IPTC 2:0 (record=2, dataset=0, len=2) -> UNKNOWN
+    Dynamically loading IPTC tables...
+    Loaded 11 IPTC tables
+      - IPTC::iptcCharset (module: IPTC, 1 tags)
+      - IPTC::PreObjectData (module: IPTC, 4 tags)
+      - IPTC::Composite (module: IPTC, 2 tags)
+      ... and 8 more
+  Found IPTC data at offset 364
+    Extracting IPTC data from offset 364
+      IPTC 1:90 (record=1, dataset=90, len=6) -> UNKNOWN
+      IPTC 1:0 (record=1, dataset=0, len=2) -> UNKNOWN
+      IPTC 2:5 (record=2, dataset=5, len=5) -> Destination = 34389
+      IPTC 2:25 (record=2, dataset=25, len=11) -> Keywords = Achievement
+      IPTC 2:25 (record=2, dataset=25, len=7) -> Keywords = Achievement, Success
+      IPTC 2:25 (record=2, dataset=25, len=9) -> Keywords = Achievement, Success, Amazement
+      IPTC 2:25 (record=2, dataset=25, len=3) -> Keywords = Achievement, Success, Amazement, Awe
+      IPTC 2:25 (record=2, dataset=25, len=11) -> Keywords = Achievement, Success, Amazement, Awe, Development
+      IPTC 2:25 (record=2, dataset=25, len=8) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=4) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=6) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=8) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=5) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=5) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=6) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=9) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=1) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=6) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=6) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=10) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=11) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=18) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=12) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=6) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=4) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=11) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=20) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=10) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=10) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=12) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=11) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=11) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=15) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=13) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=4) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=15) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=10) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=3) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=5) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=9) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=8) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=8) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=7) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=11) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=9) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=12) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=14) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=18) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=6) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=17) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=19) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=22) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=18) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=12) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=14) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=9) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=11) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=17) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=16) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=16) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=12) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=11) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=10) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=11) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=12) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=13) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=0) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=16) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=20) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=0) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:25 (record=2, dataset=25, len=0) -> Keywords = Achievement, Success, Amazement, Awe, Development,
+      IPTC 2:40 (record=2, dataset=40, len=35) -> IPTCPixelWidth = Not Released (NR),Not Released (NR)
+      IPTC 2:55 (record=2, dataset=55, len=8) -> SupplementalType = 20131203
+      IPTC 2:80 (record=2, dataset=80, len=11) -> LookupTable = Mint Images
+      IPTC 2:105 (record=2, dataset=105, len=138) -> Headline = Aerial view of cityscape with illuminated skyscrap
+      IPTC 2:110 (record=2, dataset=110, len=12) -> DataCompressionMethod = �Mint Images
+      IPTC 2:120 (record=2, dataset=120, len=110) -> QuantizationMethod = Aerial view of cityscape with illuminated skyscrap
+      IPTC 2:0 (record=2, dataset=0, len=2) -> NewsPhotoVersion =  
+  Found XMP data at offset 1811
+    Dynamically loading XMP tables...
+    Loaded 40 XMP tables
+      - XMP::xmpRights (module: XMP, 3 tags)
+      - XMP::Album (module: XMP, 3 tags)
+      - XMP::xmp (module: XMP, 13 tags)
+      ... and 37 more
+    Found XMP:Credit = ©Mint Images
+    Found XMP:DateCreated = 2013-12-03
+Extracted 18 metadata fields
 
 === Metadata (JSON) ===
-{}
+{
+  "DataCompressionMethod": "\ufffdMint Images",
+  "Destination": "34389",
+  "ExifIFD": 250,
+  "ExifIFD_118": 250,
+  "FileType": "JPEG",
+  "FileTypeDescription": "Joint Photographic Experts Group",
+  "Headline": "Aerial view of cityscape with illuminated skyscrapers above the clouds in Dubai, United Arab Emirates at dusk.,Dubai, United Arab Emirates",
+  "IPTCPixelWidth": "Not Released (NR),Not Released (NR)",
+  "Keywords": "Achievement, Success, Amazement, Awe, Development, Majestic, Mood, Dreamy, Progress, Scale, Style, Wealth, No People, 0, No One, Nobody, Luminosity, Illuminated, 21st Century Style, Contemporary, Modern, Asia, Middle East, United Arab Emirates, Copy Space, Horizontal, Colour Image, Photography, Aerial View, High Angle View, Long Exposure, City, Office Building, Skyscraper, Sky, Cloud, Moody Sky, Outdoors, Twilight, Evening, Urban Scene, Cityscape, Architecture, Capital Cities, Photography Themes, Travel, Place Of Interest, Travel Destinations, International Landmark, Corporate Business, City Skyline, Urban Overview, Cloudline, City Layout, Urban Development, Above the Clouds, Emirate of Dubai, Persian Gulf, spectacular, metropolis, global city, business hub, tall building, , digital blending, digital manipulation, , ",
+  "LookupTable": "Mint Images",
+  "MIMEType": "image/jpeg",
+  "NewsPhotoVersion": "\u0000\u0004",
+  "QuantizationMethod": "Aerial view of cityscape with illuminated skyscrapers above the clouds in Dubai, United Arab Emirates at dusk.",
+  "SupplementalType": "20131203",
+  "WB_RGGBLevelsFluorescentW": 1,
+  "WB_RGGBLevelsFluorescentW_106": 1,
+  "WhiteBalanceFineTune": 1,
+  "WhiteBalanceFineTune_46": 1,
+  "XMP:Credit": "©Mint Images",
+  "XMP:DateCreated": "2013-12-03",
+  "XMPPacket": "[5861 bytes]"
+}
 
 === Processing Complete ===
-=== File System Information ===
-File Name:     RAW_NIKON_D3X.NEF
-File Path:     /Users/Shared/haystak/Images/RAW_NIKON_D3X.NEF
-File Size:     28592354 bytes
-Permissions:   -rw-r--r--
-Modified Time: 2021-01-31T16:26:12-05:00
-Is Directory:  false
-Extension:     .NEF
-
-=== Processing Metadata ===
-Header bytes: 4d4d002a00000008001b00fe00040000
-Extension fallback: NEF
-Format:        TIFF
-Module:        TIFF
-Description:   Nikon (RAW) Electronic Format
-Found 1400 total tag tables available
-Tag Tables:    1400 found
-
-=== Extracting Metadata ===
-
-=== Metadata Capture Analysis ===
-File Type: TIFF (Module: TIFF)
-Total Available Tag Tables: 1400
-Storage Type: Hybrid (container + embedded)
-
-Available Tables by Module:
-  Photoshop: 14 tables
-  Exif: 13 tables
-  ExifTool: 20 tables
-  ICC_Profile: 9 tables
-  XMP: 36 tables
-  IPTC: 10 tables
-  GPS: 2 tables
-Total relevant module types: 7
-
-Next Steps:
-  1. Parse both container structure and embedded metadata
-  2. Handle IFD chains for TIFF-based formats
-  3. Extract from multiple metadata locations
-
-=== Metadata (JSON) ===
-{}
-
-=== Processing Complete ===
-=== File System Information ===
-File Name:     RAW_OLYMPUS_E3.ORF
-File Path:     /Users/greghacke/Pictures/OPIe/second/newfolder/RAW_OLYMPUS_E3.ORF
-File Size:     10162230 bytes
-Permissions:   -rw-r--r--
-Modified Time: 2021-01-31T15:55:06-05:00
-Is Directory:  false
-Extension:     .ORF
-
-=== Processing Metadata ===
-Header bytes: 4949524f080000001500000104000100
-Extension fallback: ORF
-Format:        ORF
-Module:        Olympus
-Description:   Olympus RAW format
-Found 1400 total tag tables available
-Tag Tables:    1400 found
-
-=== Extracting Metadata ===
-
-=== Metadata Capture Analysis ===
-File Type: ORF (Module: Olympus)
-Total Available Tag Tables: 1400
-Storage Type: Embedded tag-based metadata
-
-Available Tables by Module:
-  GPS: 2 tables
-  XMP: 36 tables
-  ICC_Profile: 9 tables
-  Exif: 13 tables
-  Photoshop: 14 tables
-  ExifTool: 20 tables
-  IPTC: 10 tables
-Total relevant module types: 7
-
-Next Steps:
-  1. Parse JPEG/PNG segments to find APP markers
-  2. Identify which metadata types are present (EXIF, IPTC, XMP)
-  3. Use appropriate tables to decode each type
-
-=== Metadata (JSON) ===
-{}
-
-=== Processing Complete ===
-=== File System Information ===
-File Name:     11_Kaval_Sviri.flac
-File Path:     /Users/greghacke/Downloads/Zamanora/11_Kaval_Sviri.flac
-File Size:     22460169 bytes
-Permissions:   -rw-rw-rw-
-Modified Time: 2025-06-21T04:29:49-04:00
-Is Directory:  false
-Extension:     .flac
-
-=== Processing Metadata ===
-Header bytes: 664c6143000000221200120000001100
-Extension fallback: FLAC
-Format:        FLAC
-Module:        FLAC
-Description:   Free Lossless Audio Codec
-Found 1400 total tag tables available
-Tag Tables:    1400 found
-
-=== Extracting Metadata ===
-
-=== Metadata Capture Analysis ===
-File Type: FLAC (Module: FLAC)
-Total Available Tag Tables: 1400
-Storage Type: Container-level metadata
-
-Available Tables by Module:
-  FLAC: 4 tables
-Total relevant module types: 1
-
-Next Steps:
-  1. Parse container structure (PDF objects, ZIP entries, etc.)
-  2. Extract metadata from appropriate locations
-  3. Use format-specific tables to decode
-
-=== Metadata (JSON) ===
-{}
-
-=== Processing Complete ===
-=== File System Information ===
-File Name:     tennessee-flag-hexagon-transition-1080p-resolution.mp4
-File Path:     /Users/greghacke/Documents/MET/_Sites/owbnknoxville.net/images/tennessee-flag-hexagon-transition-1080p-resolution.mp4
-File Size:     2526282 bytes
-Permissions:   -rw-------
-Modified Time: 2022-07-14T01:33:47-04:00
-Is Directory:  false
-Extension:     .mp4
-
-=== Processing Metadata ===
-Header bytes: 000000206674797069736f6d00000200
-Extension fallback: MP4
-Format:        MOV
-Module:        QuickTime
-Description:   MPEG-4 video
-Found 1400 total tag tables available
-Tag Tables:    1400 found
-
-=== Extracting Metadata ===
-
-=== Metadata Capture Analysis ===
-File Type: MOV (Module: QuickTime)
-Total Available Tag Tables: 1400
-Storage Type: Container-level metadata
-
-Available Tables by Module:
-  XMP: 36 tables
-  QuickTime: 90 tables
-Total relevant module types: 2
-
-Next Steps:
-  1. Parse container structure (PDF objects, ZIP entries, etc.)
-  2. Extract metadata from appropriate locations
-  3. Use format-specific tables to decode
-
-=== Metadata (JSON) ===
-{}
-
-=== Processing Complete ===
-=== File System Information ===
-File Name:     Unified_Werewolf_House_Rules_Master_Doc.docx
-File Path:     /Users/greghacke/Documents/WordDocs/Unified_Werewolf_House_Rules_Master_Doc.docx
-File Size:     383317 bytes
-Permissions:   -rw-r--r--
-Modified Time: 2025-04-09T15:45:14-04:00
-Is Directory:  false
-Extension:     .docx
-
-=== Processing Metadata ===
-Header bytes: 504b0304140002000800ba7d895a68e7
-Magic match: ZIP (pattern: PK\x03\x04)
-Using extension for specific format: DOCX
-Format:        ZIP
-Module:        OOXML
-Description:   FPX
-Found 1400 total tag tables available
-Tag Tables:    1400 found
-
-=== Extracting Metadata ===
-
-=== Metadata Capture Analysis ===
-File Type: ZIP (Module: OOXML)
-Total Available Tag Tables: 1400
-Storage Type: Container-level metadata
-
-Available Tables by Module:
-  ZIP: 4 tables
-Total relevant module types: 1
-
-Next Steps:
-  1. Parse container structure (PDF objects, ZIP entries, etc.)
-  2. Extract metadata from appropriate locations
-  3. Use format-specific tables to decode
-
-=== Metadata (JSON) ===
-{}
-
-=== Processing Complete ===
+ExifTool Version Number         : 13.25
+File Name                       : aerial-view-of-cityscape.jpg
+Directory                       : /Users/greghacke/Pictures
+File Size                       : 11 MB
+File Modification Date/Time     : 2024:03:27 21:27:11-04:00
+File Access Date/Time           : 2025:06:24 18:29:57-04:00
+File Inode Change Date/Time     : 2024:07:22 19:17:00-04:00
+File Permissions                : -rw-r--r--
+File Type                       : JPEG
+File Type Extension             : jpg
+MIME Type                       : image/jpeg
+JFIF Version                    : 1.02
+Exif Byte Order                 : Big-endian (Motorola, MM)
+Image Description               : Aerial view of cityscape with illuminated skyscrapers above the clouds in Dubai, United Arab Emirates at dusk.
+Orientation                     : Horizontal (normal)
+X Resolution                    : 300
+Y Resolution                    : 300
+Resolution Unit                 : inches
+Artist                          : Mint Images
+Y Cb Cr Positioning             : Centered
+Exif Version                    : 0230
+Components Configuration        : Y, Cb, Cr, -
+Flashpix Version                : 0100
+Color Space                     : Uncalibrated
+Current IPTC Digest             : 039501c1367b103c68e24a7b4a01b17d
+Coded Character Set             : " U T F 8 "
+Envelope Record Version         : 4
+Object Name                     : 34389
+Keywords                        : Achievement, Success, Amazement, Awe, Development, Majestic, Mood, Dreamy, Progress, Scale, Style, Wealth, No People, 0, No One, Nobody, Luminosity, Illuminated, 21st Century Style, Contemporary, Modern, Asia, Middle East, United Arab Emirates, Copy Space, Horizontal, Colour Image, Photography, Aerial View, High Angle View, Long Exposure, City, Office Building, Skyscraper, Sky, Cloud, Moody Sky, Outdoors, Twilight, Evening, Urban Scene, Cityscape, Architecture, Capital Cities, Photography Themes, Travel, Place Of Interest, Travel Destinations, International Landmark, Corporate Business, City Skyline, Urban Overview, Cloudline, City Layout, Urban Development, Above the Clouds, Emirate of Dubai, Persian Gulf, spectacular, metropolis, global city, business hub, tall building, , digital blending, digital manipulation, ,
+Special Instructions            : Not Released (NR),Not Released (NR)
+By-line                         : Mint Images
+Caption-Abstract                : Aerial view of cityscape with illuminated skyscrapers above the clouds in Dubai, United Arab Emirates at dusk.
+Application Record Version      : 4
+XMP Toolkit                     : Image::ExifTool 9.64
+Creator                         : Mint Images
+Description                     : Aerial view of cityscape with illuminated skyscrapers above the clouds in Dubai, United Arab Emirates at dusk.
+Subject                         : Achievement, Success, Amazement, Awe, Development, Majestic, Mood, Dreamy, Progress, Scale, Style, Wealth, No People, 0, No One, Nobody, Luminosity, Illuminated, 21st Century Style, Contemporary, Modern, Asia, Middle East, United Arab Emirates, Copy Space, Horizontal, Colour Image, Photography, Aerial View, High Angle View, Long Exposure, City, Office Building, Skyscraper, Sky, Cloud, Moody Sky, Outdoors, Twilight, Evening, Urban Scene, Cityscape, Architecture, Capital Cities, Photography Themes, Travel, Place Of Interest, Travel Destinations, International Landmark, Corporate Business, City Skyline, Urban Overview, Cloudline, City Layout, Urban Development, Above the Clouds, Emirate of Dubai, Persian Gulf, spectacular, metropolis, global city, business hub, tall building, , digital blending, digital manipulation, ,
+Title                           : 34389
+Credit                          : ©Mint Images
+Date Created                    : 2013:12:03
+Headline                        : Aerial view of cityscape with illuminated skyscrapers above the clouds in Dubai, United Arab Emirates at dusk.,Dubai, United Arab Emirates
+Instructions                    : Not Released (NR),Not Released (NR)
+Profile CMM Type                : Adobe Systems Inc.
+Profile Version                 : 2.1.0
+Profile Class                   : Display Device Profile
+Color Space Data                : RGB
+Profile Connection Space        : XYZ
+Profile Date Time               : 1999:06:03 00:00:00
+Profile File Signature          : acsp
+Primary Platform                : Apple Computer Inc.
+CMM Flags                       : Not Embedded, Independent
+Device Manufacturer             : none
+Device Model                    : 
+Device Attributes               : Reflective, Glossy, Positive, Color
+Rendering Intent                : Media-Relative Colorimetric
+Connection Space Illuminant     : 0.9642 1 0.82491
+Profile Creator                 : Adobe Systems Inc.
+Profile ID                      : 0
+Profile Copyright               : Copyright 1999 Adobe Systems Incorporated
+Profile Description             : Adobe RGB (1998)
+Media White Point               : 0.95045 1 1.08905
+Media Black Point               : 0 0 0
+Red Tone Reproduction Curve     : (Binary data 14 bytes, use -b option to extract)
+Green Tone Reproduction Curve   : (Binary data 14 bytes, use -b option to extract)
+Blue Tone Reproduction Curve    : (Binary data 14 bytes, use -b option to extract)
+Red Matrix Column               : 0.60974 0.31111 0.01947
+Green Matrix Column             : 0.20528 0.62567 0.06087
+Blue Matrix Column              : 0.14919 0.06322 0.74457
+DCT Encode Version              : 100
+APP14 Flags 0                   : [14]
+APP14 Flags 1                   : (none)
+Color Transform                 : YCbCr
+Image Width                     : 5100
+Image Height                    : 3404
+Encoding Process                : Baseline DCT, Huffman coding
+Bits Per Sample                 : 8
+Color Components                : 3
+Y Cb Cr Sub Sampling            : YCbCr4:4:4 (1 1)
+Image Size                      : 5100x3404
+Megapixels                      : 17.4

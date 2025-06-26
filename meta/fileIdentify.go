@@ -22,6 +22,7 @@ type FileType struct {
 	Format      string // Primary format (e.g., "JPEG", "TIFF")
 	Module      string // Module name from ExifTool
 	Description string // Format description
+	Extension   string // File extension (e.g., "NEF", "CR2")
 }
 
 // ProcessFileByPath processes a file from its path
@@ -58,6 +59,9 @@ func processFileRawWithPath(file io.ReadSeeker, filePath string, requested Metad
 	fmt.Printf("Format:        %s\n", fileType.Format)
 	fmt.Printf("Module:        %s\n", fileType.Module)
 	fmt.Printf("Description:   %s\n", fileType.Description)
+	if fileType.Extension != "" {
+		fmt.Printf("Extension:     %s\n", fileType.Extension)
+	}
 
 	// Find appropriate tag tables for this file type
 	tagTables := findTagTablesForFileType(fileType)
@@ -84,23 +88,199 @@ func processFileRawWithPath(file io.ReadSeeker, filePath string, requested Metad
 
 // findTagTablesForFileType finds the appropriate tag tables for a file type
 func findTagTablesForFileType(fileType *FileType) []*tags.TagTable {
-	var tables []*tags.TagTable
+	fmt.Printf("\n=== Dynamic Tag Table Loading for %s ===\n", fileType.Format)
 
-	// Collect all potentially relevant tables
-	for _, table := range tags.AllTags {
-		// Skip tables without a module name
-		if table.ModuleName == "" {
-			continue
+	// Use a map to track loaded tables and avoid duplicates
+	loadedTables := make(map[string]*tags.TagTable)
+
+	// Step 1: Load base tables for the format
+	fmt.Println("Step 1: Loading base tables...")
+	baseCount := 0
+
+	// Collect modules to load
+	modulesToLoad := make(map[string]bool)
+	modulesToLoad[fileType.Module] = true
+	modulesToLoad[fileType.Format] = true
+
+	// If we have an extension, check if there's a specific module for it
+	if fileType.Extension != "" {
+		// Look up the extension in ExifToolFileTypes to find associated modules
+		ext := strings.ToUpper(strings.TrimPrefix(fileType.Extension, "."))
+
+		// Check if this extension has a specific module name
+		if module, ok := tags.ExifToolFileTypes.ModuleNames[ext]; ok && module != "" && module != "0" {
+			modulesToLoad[module] = true
+			// Also try module+"Settings" (e.g., NikonSettings)
+			modulesToLoad[module+"Settings"] = true
 		}
 
-		// For now, collect ALL tables and let CaptureMetadata decide which ones to use
-		// based on what's actually present in the file
+		// For extensions that map to manufacturers, also load their tables
+		// We can infer this from the extension info description
+		if extInfo, ok := tags.ExifToolFileTypes.Extensions[ext]; ok {
+			// Extract manufacturer from description (e.g., "Nikon Electronic Format" -> "Nikon")
+			desc := extInfo.Description
+			if desc != "" {
+				// Common patterns in descriptions
+				manufacturers := []string{"Nikon", "Canon", "Sony", "Olympus", "Pentax", "Panasonic", "FujiFilm", "Kodak", "Minolta", "Samsung"}
+				for _, mfr := range manufacturers {
+					if strings.Contains(desc, mfr) {
+						modulesToLoad[mfr] = true
+						modulesToLoad[mfr+"Settings"] = true
+						break
+					}
+				}
+			}
+		}
+	}
+
+	// Special case: TIFF-based formats need EXIF tables
+	if fileType.Format == "TIFF" || strings.Contains(fileType.Description, "TIFF") {
+		modulesToLoad["EXIF"] = true
+		modulesToLoad["Exif"] = true // Both cases
+	}
+
+	// Load tables for all identified modules
+	for tableName, table := range tags.AllTags {
+		for module := range modulesToLoad {
+			if strings.EqualFold(table.ModuleName, module) {
+				loadedTables[tableName] = table
+				baseCount++
+				fmt.Printf("  Loaded: %s\n", tableName)
+				break
+			}
+		}
+	}
+	fmt.Printf("Base tables loaded: %d\n", baseCount)
+
+	// Step 2: Follow SubIFD references recursively
+	fmt.Println("\nStep 2: Following SubIFD references...")
+	followedCount := followSubIFDReferences(loadedTables)
+	fmt.Printf("Additional tables loaded via SubIFD: %d\n", followedCount)
+
+	// Convert to slice
+	var tables []*tags.TagTable
+	for _, table := range loadedTables {
 		tables = append(tables, table)
 	}
 
-	fmt.Printf("Found %d total tag tables available\n", len(tables))
+	fmt.Printf("\nTotal pre-loaded tables: %d\n", len(tables))
+	fmt.Println("Note: Additional tables will be loaded dynamically during parsing")
 
 	return tables
+}
+
+// followSubIFDReferences recursively loads tables referenced via SubIFD
+func followSubIFDReferences(loadedTables map[string]*tags.TagTable) int {
+	addedCount := 0
+	maxDepth := 5 // Prevent infinite recursion
+
+	for depth := 0; depth < maxDepth; depth++ {
+		newTablesFound := false
+		tablesToAdd := make(map[string]*tags.TagTable)
+
+		// Check all currently loaded tables for SubIFD references
+		for _, table := range loadedTables {
+			for _, tagDef := range table.Tags {
+				if tagDef.SubIFD != "" {
+					// Extract table name from SubIFD reference
+					// Format is usually "Image::ExifTool::ModuleName::TableName"
+					tableName := extractTableName(tagDef.SubIFD)
+
+					// Check if we already have this table
+					if _, exists := loadedTables[tableName]; !exists {
+						// Try to find this table in AllTags
+						if foundTable := findTableByName(tableName); foundTable != nil {
+							tablesToAdd[tableName] = foundTable
+							newTablesFound = true
+							fmt.Printf("  Following SubIFD: %s -> %s\n", tagDef.SubIFD, tableName)
+						}
+					}
+				}
+			}
+		}
+
+		// Add new tables to loaded set
+		for name, table := range tablesToAdd {
+			loadedTables[name] = table
+			addedCount++
+		}
+
+		// Stop if no new tables found
+		if !newTablesFound {
+			break
+		}
+	}
+
+	return addedCount
+}
+
+// extractTableName extracts the table name from a SubIFD reference
+func extractTableName(subIFD string) string {
+	// SubIFD format: "Image::ExifTool::ModuleName::TableName"
+	// We want "ModuleName::TableName" to match our AllTags keys
+	parts := strings.Split(subIFD, "::")
+	if len(parts) >= 4 {
+		// Return last two parts joined
+		return parts[len(parts)-2] + "::" + parts[len(parts)-1]
+	} else if len(parts) >= 2 {
+		// Return last two parts or whatever we have
+		if len(parts) == 3 {
+			return parts[1] + "::" + parts[2]
+		}
+		return parts[len(parts)-1]
+	}
+	return subIFD
+}
+
+// findTableByName searches for a table by name in AllTags
+func findTableByName(tableName string) *tags.TagTable {
+	// Direct lookup first
+	if table, exists := tags.AllTags[tableName]; exists {
+		return table
+	}
+
+	// Try variations of the name
+	// Sometimes the table name in SubIFD doesn't exactly match the key in AllTags
+	for name, table := range tags.AllTags {
+		if strings.HasSuffix(name, "::"+tableName) ||
+			strings.EqualFold(name, tableName) {
+			return table
+		}
+	}
+
+	return nil
+}
+
+// LoadTablesForMetadataType dynamically loads tables when a metadata type is discovered during parsing
+func LoadTablesForMetadataType(metadataType string, currentTables map[string]*tags.TagTable) int {
+	fmt.Printf("  Dynamic: Loading tables for discovered %s metadata\n", metadataType)
+
+	loadedCount := 0
+	metadataUpper := strings.ToUpper(metadataType)
+
+	for tableName, table := range tags.AllTags {
+		// Skip if already loaded
+		if _, exists := currentTables[tableName]; exists {
+			continue
+		}
+
+		// Check if this table is for the discovered metadata type
+		moduleUpper := strings.ToUpper(table.ModuleName)
+		if moduleUpper == metadataUpper ||
+			strings.Contains(moduleUpper, metadataUpper) {
+			currentTables[tableName] = table
+			loadedCount++
+			fmt.Printf("    Loaded: %s\n", tableName)
+		}
+	}
+
+	// Also follow any new SubIFD references
+	if loadedCount > 0 {
+		additionalCount := followSubIFDReferences(currentTables)
+		loadedCount += additionalCount
+	}
+
+	return loadedCount
 }
 
 // identifyFileWithPath determines file type using ExifTool data
@@ -122,6 +302,12 @@ func identifyFileWithPath(file io.ReadSeeker, filePath string) (*FileType, error
 	// Debug: show first 16 bytes
 	fmt.Printf("Header bytes: %s\n", hex.EncodeToString(header[:16]))
 
+	// Get extension for later use
+	var ext string
+	if filePath != "" {
+		ext = strings.ToUpper(strings.TrimPrefix(filepath.Ext(filePath), "."))
+	}
+
 	// Try magic byte detection first (in TestOrder)
 	// This ensures we check in the priority order ExifTool uses
 	for _, fileType := range tags.ExifToolFileTypes.TestOrder {
@@ -141,7 +327,6 @@ func identifyFileWithPath(file io.ReadSeeker, filePath string) (*FileType, error
 			// For formats that have many variants (like TIFF-based RAW files),
 			// check if we can get more specific info from the extension
 			if shouldUseExtensionForSpecificity(fileType, filePath) {
-				ext := strings.ToUpper(strings.TrimPrefix(filepath.Ext(filePath), "."))
 				if extInfo, ok := tags.ExifToolFileTypes.Extensions[ext]; ok {
 					// Only use extension if it maps to the same base type
 					if extInfo.Type == fileType || resolveBaseType(extInfo.Type) == fileType {
@@ -151,20 +336,19 @@ func identifyFileWithPath(file io.ReadSeeker, filePath string) (*FileType, error
 				}
 			}
 
-			return resolveFileType(fileType, "")
+			return resolveFileType(fileType, ext)
 		}
 	}
 
 	// Fall back to extension if available
-	if filePath != "" {
-		ext := strings.ToUpper(strings.TrimPrefix(filepath.Ext(filePath), "."))
+	if ext != "" {
 		fmt.Printf("Extension fallback: %s\n", ext)
 		if extInfo, ok := tags.ExifToolFileTypes.Extensions[ext]; ok {
 			return resolveFileType(extInfo.Type, ext)
 		}
 	}
 
-	return &FileType{Format: "UNKNOWN", Module: "", Description: "Unknown format"}, nil
+	return &FileType{Format: "UNKNOWN", Module: "", Description: "Unknown format", Extension: ""}, nil
 }
 
 // shouldUseExtensionForSpecificity checks if we should prefer extension for certain base types
@@ -258,6 +442,7 @@ func resolveFileType(fileType string, originalExt string) (*FileType, error) {
 		Format:      resolvedType,
 		Module:      module,
 		Description: description,
+		Extension:   originalExt,
 	}, nil
 }
 
